@@ -1,0 +1,7 @@
+E:\jog\My Dropbox\RemotingSample\Client\bin\Debug\Client.exe
+E:\jog\My Dropbox\RemotingSample\Client\bin\Debug\Client.pdb
+E:\jog\My Dropbox\RemotingSample\Client\bin\Debug\CommonTypes.dll
+E:\jog\My Dropbox\RemotingSample\Client\bin\Debug\CommonTypes.pdb
+E:\jog\My Dropbox\RemotingSample\Client\obj\Debug\ResolveAssemblyReference.cache
+E:\jog\My Dropbox\RemotingSample\Client\obj\Debug\Client.exe
+E:\jog\My Dropbox\RemotingSample\Client\obj\Debug\Client.pdb

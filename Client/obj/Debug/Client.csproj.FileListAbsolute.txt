@@ -1,0 +1,9 @@
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\Client\obj\Debug\Client.exe
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\Client\obj\Debug\Client.pdb
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\Client\bin\Debug\Client.exe
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\Client\bin\Debug\Client.pdb
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\Client\bin\Debug\CommonTypes.dll
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\Client\bin\Debug\CommonTypes.pdb
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\Client\obj\Debug\Client.csprojResolveAssemblyReference.cache
+D:\Workspaces\Visual Studio\PADI-MapNoReduce\Client\obj\Debug\Client.exe
+D:\Workspaces\Visual Studio\PADI-MapNoReduce\Client\obj\Debug\Client.pdb

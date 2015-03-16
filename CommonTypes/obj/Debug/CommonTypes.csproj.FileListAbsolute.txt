@@ -1,0 +1,5 @@
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\CommonTypes\bin\Debug\CommonTypes.dll
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\CommonTypes\bin\Debug\CommonTypes.pdb
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\CommonTypes\obj\Debug\CommonTypes.csprojResolveAssemblyReference.cache
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\CommonTypes\obj\Debug\CommonTypes.dll
+D:\Clouds\Dropbox\JotaTR\Informatica\.Plataformas Distribuidas\Projecto\MapNoReduce\CommonTypes\obj\Debug\CommonTypes.pdb
