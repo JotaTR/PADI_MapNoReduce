@@ -1,6 +1,9 @@
 using System;
 using System.IO;
 
+/// CHANGE TO CLIENT: Renato
+
+
 namespace PADI_MapNoReduce
 {
     public class clsPerson
@@ -33,5 +36,30 @@ namespace PADI_MapNoReduce
             return data; 
         }
 
+
+        // LOCAL METHOD INIT
+        public void INIT()
+        {
+
+        }
+
+        // LOCAL METHOD SUBMIT
+        public void SUBMIT(string filepath, int nSplits, string outputPath, IMap mapImplementation)
+        {
+          // UserApplication (and PuppetMaster, for testing) call this method in order to send new mapping jobs to Server(Workers)
+        }
+
+
+        // REMOTE Provide Splits
+        public void ProvideSplits(string textbegin, string textEnd)
+        {
+          // Server(Workers) call this method in order to receive the split they are supposed to work on
+        }
+
+        // REMOTE Receive Output
+        public void ReceiveOutput(string processedSplit)
+        {
+          // Server(Workers) call this method in order to send the client the result of processing the splits
+        }
   }
 }

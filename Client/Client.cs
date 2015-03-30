@@ -6,6 +6,11 @@ using System.Runtime.Remoting.Channels;
 using System.Net.Sockets;
 using System.Threading;
 
+
+/// CHANGE TO USER APPLICATION: Renato
+
+
+
 namespace PADI_MapNoReduce {
 
 	class Client {
