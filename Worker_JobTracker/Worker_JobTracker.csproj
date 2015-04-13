@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>c0a3690f-4da1-4a35-982f-c8ae230f6fe9</ProjectGuid>
+    <ProjectGuid>{C359F5EA-ECA4-4710-BDF9-1D4496C7A213}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Worker_JobTracker</RootNamespace>
