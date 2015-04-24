@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 /// CHANGE TO CLIENT: Renato
@@ -12,6 +13,91 @@ namespace PADI_MapNoReduce
         public string MI;
         public string LastName;
     }
+
+
+
+
+
+
+
+
+
+
+    /************************
+     * Classes
+    **************************/
+    class Worker
+    {
+        public double rank;//classificação de fiabilidade (contactados primeiro)
+        public String ip;
+        public String id;
+        public bool ready;
+
+        public Worker(String ip, String id)
+        {
+
+            this.ip = ip;
+            this.id = id;
+            ready = true;
+
+        }
+    }
+
+    class Split
+    {
+        public Worker worker;//classificação de fiabilidade (contactados primeiro)
+        public int splitId;
+        public String state;//waiting for worker, waiting for split, in progress, finished, aborted
+
+        public Split(Worker worker, int splitId, String state)
+        {
+
+            this.worker = worker;
+            this.splitId = splitId;
+            this.state = state;
+        }
+    }
+
+    //JobTacker interface
+    public interface WorkerRegisterInterface
+    {
+        void registerWorker(String worker_ip, int id);
+        List<Worker> getWorkers();
+    }
+
+    public interface JobAssignInterface
+    {
+        void assignJob(String worker_ip, int id);
+        List<Worker> getWorkers();
+    }
+
+
+    //Worker Interface
+    public interface WorkerRegisterInterface
+    {
+        void registerWorker(String worker_ip, int id);
+        List<Worker> getWorkers();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	public class MyRemoteObject : MarshalByRefObject  {
 

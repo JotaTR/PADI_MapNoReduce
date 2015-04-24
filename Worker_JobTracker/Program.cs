@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
+using PADI_MapNoReduce;
+
 
 namespace Worker_JobTracker
 {
@@ -13,15 +18,16 @@ namespace Worker_JobTracker
         private static String client_ip;
         private static List<Worker> workers_list;
         
+
         /************************
          * METODOS PARA O JOB TRACKER
         ************************/
         // This is the call that the AsyncCallBack delegate will reference.
-        public void assignWorkers(int split_number)
+        public void assignWorkers(byte[] code, string className ,int split_number)
         {
             
             int[] split = new int[split_number];
-            List<Worker> workers_list_sorted = workers_list.OrderBy(o=>o.rank).ToList();//Sort List of workers
+            //List<Worker> workers_list_sorted = workers_list.OrderBy(o=>o.rank).ToList();//Sort List of workers
 
             //iterate through workers
             foreach (var w in workers_list) {
@@ -78,27 +84,27 @@ namespace Worker_JobTracker
         * METODOS PARA O WORKER
         ************************/
         //comunica com a aplicacao cliente a pedir o trabalho que lhe foi atribuido pelo Job Tracker
-        private String getJob(Job job)
+        private String getSplit(Split split)
         {
-            String split = "";
+            String split_string = "";
             return split;
         }
 
         //comunica com a aplicacao cliente a pedir o trabalho que lhe foi atribuido pelo Job Tracker
-        private void sendJob(String job_output)
+        private void sendSplit(String job_output)
         {
 
         }
 
         //executa trabalho
-        private void execute_job(Job job)
+        private void execute_split(Split split)
         {
-            String split = getJob(job);
+            String split_string = getSplit(split);
 
             //codigo para tratar o split
 
-            String job_output = "";
-            sendJob(job_output);
+            String split_output = "";
+            sendSplit(split_output);
         }
 
 
@@ -109,6 +115,16 @@ namespace Worker_JobTracker
 
         static void Main(string[] args)
         {
+            TcpChannel channel = new TcpChannel(10000);
+
+            ChannelServices.RegisterChannel(channel, true);
+            RemotingConfiguration.RegisterWellKnownServiceType(
+                typeof(WorkerServices),
+                "Worker",
+                WellKnownObjectMode.Singleton);
+            System.Console.WriteLine("Press <enter> to terminate server...");
+            System.Console.ReadLine();
+
             //Criar server a agardar comunicação dos workers
             workers_list.Add(new Worker("192.168.1.1", "1"));
             workers_list.Add(new Worker("192.168.1.1", "2"));
@@ -123,41 +139,17 @@ namespace Worker_JobTracker
 
 
 
+    /********************************
+     * Interfaces
+    *********************************/ 
 
+    public class WorkerRegisterService : MarshalByRefObject, WorkerRegisterInterface{
 
-
-    /************************
-     * Classes
-    **************************/
-    class Worker
-    {
-        public double rank;//classificação de fiabilidade (contactados primeiro)
-        public String ip;
-        public String id;
-        public bool ready;
-
-        public Worker(String ip, String id){
-
-            this.ip = ip;
-            this.id = id;
-            ready = true;
-  
-        }
     }
 
-    class Job
-    {
-        public Worker worker;//classificação de fiabilidade (contactados primeiro)
-        public int splitId;
-        public String state;//waiting for worker, waiting for split, in progress, finished, aborted
+     public class JobAssignService : MarshalByRefObject, JobAssignInterface{
 
-        public Job(Worker worker, int splitId, String state)
-        {
-
-            this.worker = worker;
-            this.splitId = splitId;
-            this.state = state;
-        }
     }
+
 
 }
