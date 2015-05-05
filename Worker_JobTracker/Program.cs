@@ -13,10 +13,14 @@ namespace Worker_JobTracker
 {
     class Program
     {
+        //if JT == true -> node is jobtracker; if W == true -> node is worker;if JT == true and W = true -> node is Worker serving has a JT backp node
+        private static bool JT;
+        private static bool W;
         private static String ip;
         private static String id;
         private static String client_ip;
         private static List<Worker> workers_list;
+        private static List<JobTracker> jobtracker_list;
         
 
         /************************
@@ -42,9 +46,12 @@ namespace Worker_JobTracker
                     informWorker(workers_list[i], i);
                 }
 
-            }else if(workers_list.Count > split_number){//+ splits do que workers
+            }else if(workers_list.Count < split_number){//+ splits do que workers
 
-
+                for (int i = 0; i < split_number; i++)
+                {
+                    informWorker(workers_list[i], i);
+                }
 
             }else{//igual numero entre splits e workers
 
@@ -84,30 +91,35 @@ namespace Worker_JobTracker
         * METODOS PARA O WORKER
         ************************/
         //comunica com a aplicacao cliente a pedir o trabalho que lhe foi atribuido pelo Job Tracker
-        private String getSplit(Split split)
+        private Task getTask(Task task)
         {
-            String split_string = "";
-            return split;
+            String task_string = "";
+            return task;
         }
 
         //comunica com a aplicacao cliente a pedir o trabalho que lhe foi atribuido pelo Job Tracker
-        private void sendSplit(String job_output)
+        private void sendTask(String job_output)
         {
 
         }
 
         //executa trabalho
-        private void execute_split(Split split)
+        private void execute_task(Task task)
         {
-            String split_string = getSplit(split);
+            Task split_string = getTask(task);
 
             //codigo para tratar o split
 
             String split_output = "";
-            sendSplit(split_output);
+            sendTask(split_output);
         }
 
+        /**************************
+         * Metodos especifos para o Worker com funções de JobTrackerReplica
+        ***************************/
+        public void checkJobTracker(){
 
+        }
 
 
 

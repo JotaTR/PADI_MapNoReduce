@@ -7,22 +7,7 @@ using System.IO;
 
 namespace PADI_MapNoReduce
 {
-    public class clsPerson
-    {
-        public string FirstName;
-        public string MI;
-        public string LastName;
-    }
-
-
-
-
-
-
-
-
-
-
+  
     /************************
      * Classes
     **************************/
@@ -43,20 +28,40 @@ namespace PADI_MapNoReduce
         }
     }
 
-    class Split
+    class JobTracker
+    {
+        public String ip;
+        public String id;
+
+        public JobTracker(String ip, String id)
+        {
+
+            this.ip = ip;
+            this.id = id;
+
+        }
+    }
+
+
+
+    class Task
     {
         public Worker worker;//classificação de fiabilidade (contactados primeiro)
-        public int splitId;
-        public String state;//waiting for worker, waiting for split, in progress, finished, aborted
+        public int TaskId;
+        public String state;//waiting for worker, waiting for Task, in progress, finished, aborted
 
-        public Split(Worker worker, int splitId, String state)
+        public Task(Worker worker, int TaskId, String state)
         {
 
             this.worker = worker;
-            this.splitId = splitId;
+            this.TaskId = TaskId;
             this.state = state;
         }
     }
+
+
+
+
 
     //JobTacker interface
     public interface WorkerRegisterInterface
@@ -67,7 +72,7 @@ namespace PADI_MapNoReduce
 
     public interface JobAssignInterface
     {
-        void assignJob(String worker_ip, int id);
+        void assignJob(int Task_number, int id);
         List<Worker> getWorkers();
     }
 
@@ -130,22 +135,22 @@ namespace PADI_MapNoReduce
         }
 
         // LOCAL METHOD SUBMIT
-        public void SUBMIT(string filepath, int nSplits, string outputPath, IMap mapImplementation)
+        public void SUBMIT(string filepath, int nTasks, string outputPath, IMap mapImplementation)
         {
           // UserApplication (and PuppetMaster, for testing) call this method in order to send new mapping jobs to Server(Workers)
         }
 
 
-        // REMOTE Provide Splits
-        public void ProvideSplits(string textbegin, string textEnd)
+        // REMOTE Provide Tasks
+        public void ProvideTasks(string textbegin, string textEnd)
         {
-          // Server(Workers) call this method in order to receive the split they are supposed to work on
+          // Server(Workers) call this method in order to receive the Task they are supposed to work on
         }
 
         // REMOTE Receive Output
-        public void ReceiveOutput(string processedSplit)
+        public void ReceiveOutput(string processedTask)
         {
-          // Server(Workers) call this method in order to send the client the result of processing the splits
+          // Server(Workers) call this method in order to send the client the result of processing the Tasks
         }
   }
 }
