@@ -24,36 +24,75 @@ namespace PuppetMaster
 
     private void Submit_Click(object sender, EventArgs e)
     {
-      char[] whitespaces = new char[] { ' ', '\t', '\n', '\r' };
-      string textToInterpret = CommandTextLine.Text;
-      string[] parsedText = textToInterpret.Split(whitespaces);
+      string[] linesToInterpret = CommandTextLine.Lines;
 
-      switch (parsedText[0])
+      foreach (string textToInterpret in linesToInterpret)
       {
-        // Submits a job to the workers/server
-        case "SUBMIT": 
-          break;
-        // Creates a new worker
-        case "WORKER": 
-          break;
-        // Stops execution of other command scripts
-        case "WAIT": break;
-        // Makes all workers/job trackers submit/print their current status
-        case "STATUS": break;
-        // Delays a given worker process
-        case "SLOWW": break;
-        // Disables a given worker process's Worker Functions
-        case "FREEZEW": break;
-        // (Re)enables a given worker process's Worker Functions
-        case "UNFREEZEW": break;
-        // Disables a given worker process's Job Tracker Functions
-        case "FREEZEC": break;
-        // (Re)enables a given worker process's Job Tracker Functions
-        case "UNFREEZEC": break;
-        default:
-          System.Windows.Forms.MessageBox.Show("Please input a correct Command");
-          break; 
+        char[] whitespaces = new char[] { ' ', '\t', '\n', '\r' };
+        //string textToInterpret = CommandTextLine.Text;
+        string[] parsedText = textToInterpret.Split(whitespaces);
+
+        PuppetMaster targetPM;
+
+        switch (parsedText[0])
+        {
+          // Submits a job to the workers/server
+          case "SUBMIT":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            targetPM.SubmitJob(parsedText[1], parsedText[2],
+                        parsedText[3], Int32.Parse(parsedText[4]),
+                        parsedText[5], parsedText[6]
+                        );
+            break;
+          // Creates a new worker
+          case "WORKER":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), parsedText[2]);
+            targetPM.CreateWorker(parsedText[3], Int32.Parse(parsedText[1]));
+            break;
+          // Stops execution of other command scripts
+          case "WAIT":
+            //targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            // Parses the seconds it has to wait, and converts them to milliseconds
+            int time = Int32.Parse(parsedText[1]) * 1000;
+            //targetPM.Wait(time);
+            System.Threading.Thread.Sleep(time);
+            break;
+          // Makes all workers/job trackers submit/print their current status
+          case "STATUS":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            targetPM.StatusReport();
+            break;
+          // Delays a given worker process
+          case "SLOWW":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            targetPM.SlowWorker(Int32.Parse(parsedText[1]), Int32.Parse(parsedText[2]));
+            break;
+          // Disables a given worker process's Worker Functions
+          case "FREEZEW":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            targetPM.FreezeWorker(Int32.Parse(parsedText[1]));
+            break;
+          // (Re)enables a given worker process's Worker Functions
+          case "UNFREEZEW":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            targetPM.UnfreezeWorker(Int32.Parse(parsedText[1]));
+            break;
+          // Disables a given worker process's Job Tracker Functions
+          case "FREEZEC":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            targetPM.FreezeJobTracker(Int32.Parse(parsedText[1]));
+            break;
+          // (Re)enables a given worker process's Job Tracker Functions
+          case "UNFREEZEC":
+            targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
+            targetPM.UnfreezeJobTracker(Int32.Parse(parsedText[1]));
+            break;
+          default:
+            System.Windows.Forms.MessageBox.Show("Please input a correct Command");
+            break;
+        }
       }
     }
+
   }
 }

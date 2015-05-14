@@ -34,9 +34,13 @@
       // 
       // CommandTextLine
       // 
-      this.CommandTextLine.Location = new System.Drawing.Point(12, 87);
+      this.CommandTextLine.AcceptsReturn = true;
+      this.CommandTextLine.AcceptsTab = true;
+      this.CommandTextLine.AllowDrop = true;
+      this.CommandTextLine.Location = new System.Drawing.Point(12, 12);
+      this.CommandTextLine.Multiline = true;
       this.CommandTextLine.Name = "CommandTextLine";
-      this.CommandTextLine.Size = new System.Drawing.Size(333, 20);
+      this.CommandTextLine.Size = new System.Drawing.Size(333, 310);
       this.CommandTextLine.TabIndex = 1;
       // 
       // Submit

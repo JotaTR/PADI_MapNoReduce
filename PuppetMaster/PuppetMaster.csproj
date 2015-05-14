@@ -79,13 +79,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Client\Client.csproj">
+      <Project>{10814e0a-3901-4218-a466-e7660471cee6}</Project>
+      <Name>Client</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CommonTypes\CommonTypes.csproj">
       <Project>{ddfd7b0b-aec6-4ed4-bdd4-8ce212d28158}</Project>
       <Name>CommonTypes</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Server\Server.csproj">
-      <Project>{78581b6e-41d2-452f-b28a-30a6c80887c8}</Project>
-      <Name>Server</Name>
     </ProjectReference>
     <ProjectReference Include="..\Worker_JobTracker\Worker_JobTracker.csproj">
       <Project>{c359f5ea-eca4-4710-bdf9-1d4496c7a213}</Project>
