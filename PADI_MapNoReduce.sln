@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuppetMaster", "PuppetMaste
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Worker_JobTracker", "Worker_JobTracker\Worker_JobTracker.csproj", "{C359F5EA-ECA4-4710-BDF9-1D4496C7A213}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibMapper", "ConsoleApplication1\LibMapper.csproj", "{5565408A-03A8-4737-8A06-CF7C8B4B1371}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{C359F5EA-ECA4-4710-BDF9-1D4496C7A213}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C359F5EA-ECA4-4710-BDF9-1D4496C7A213}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C359F5EA-ECA4-4710-BDF9-1D4496C7A213}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5565408A-03A8-4737-8A06-CF7C8B4B1371}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5565408A-03A8-4737-8A06-CF7C8B4B1371}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5565408A-03A8-4737-8A06-CF7C8B4B1371}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5565408A-03A8-4737-8A06-CF7C8B4B1371}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

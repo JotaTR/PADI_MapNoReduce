@@ -1,0 +1,8 @@
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\obj\Debug\Worker_JobTracker.csprojResolveAssemblyReference.cache
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\bin\Debug\Worker_JobTracker.exe.config
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\bin\Debug\Worker_JobTracker.exe
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\bin\Debug\Worker_JobTracker.pdb
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\bin\Debug\CommonTypes.dll
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\bin\Debug\CommonTypes.pdb
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\obj\Debug\Worker_JobTracker.exe
+D:\Workspaces\Visual Studio\PADI_MapNoReduce\Worker_JobTracker\obj\Debug\Worker_JobTracker.pdb
