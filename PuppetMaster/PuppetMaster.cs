@@ -22,10 +22,22 @@ namespace PuppetMaster
   {
     // int: Worker ID
     // Object: Worker instance
-    private Dictionary<int, PADI_MapNoReduce.Worker> workerList = new Dictionary<int, PADI_MapNoReduce.Worker>();
+    private Dictionary<int, Program> workerList = new Dictionary<int, Program>();
     private int currentWorkerID = 0;
-    private int ID;
-    private int numberPM = 0;
+    private int _ID;
+    private int _numberPM = 0;
+
+    public int ID
+    {
+      get { return _ID; }
+      set { _ID = value; }
+    }
+
+    public int numberPM
+    {
+      get { return _numberPM; }
+      set { _numberPM = value; }
+    }
 
     // Functions
 
@@ -42,7 +54,7 @@ namespace PuppetMaster
 
 
       Worker worker = (Worker)Activator.GetObject(typeof(Worker), entryURL);
-      string txt = System.IO.File.ReadAllText(@inputPath);
+      string txt = System.IO.File.ReadAllText(inputPath);
       byte[] code = System.IO.File.ReadAllBytes(mapClassPath);
 
       object ClassObj = null;
@@ -84,13 +96,13 @@ namespace PuppetMaster
       // Create new worker instance and store it in array/dictionary
       if (id <= 0 && !workerList.ContainsKey(currentWorkerID))
       {
-        Worker w = new Worker(workerURL, currentWorkerID.ToString());
+        Program w = new Program(currentWorkerID, "tcp://localhost:"+ID+"/PM", workerURL, entryURL);
         workerList.Add(currentWorkerID, w);
         currentWorkerID++;
       }
       else if (!workerList.ContainsKey(id))
       {
-        Worker w = new Worker(workerURL, id.ToString());
+        Program w = new Program(id, "tcp://localhost:" + ID + "/PM", workerURL, entryURL);
         workerList.Add(id, w);
         currentWorkerID = id;
       }
@@ -139,7 +151,7 @@ namespace PuppetMaster
     // Delays (puts to sleep) a worker process
     public void SlowWorker(int workerID, int ms)
     {
-      Worker w;
+      Program w;
       if (workerList.TryGetValue(workerID, out w))
       {
 
@@ -150,7 +162,7 @@ namespace PuppetMaster
     // Disables a given worker process's Worker Functions
     public void FreezeWorker(int workerID)
     {
-      Worker w;
+      Program w;
       if(workerList.TryGetValue(workerID, out w))
       {
         if (w.Equals(w))
@@ -164,7 +176,7 @@ namespace PuppetMaster
     // Re-enables a given worker process's Worker Functions
     public void UnfreezeWorker(int workerID)
     {
-      Worker w;
+      Program w;
       if (workerList.TryGetValue(workerID, out w))
       {
         if (w.Equals(w))
@@ -178,7 +190,7 @@ namespace PuppetMaster
     // Disables a given worker process's JobTracker Functions
     public void FreezeJobTracker(int workerID)
     {
-      Worker w;
+      Program w;
       if (workerList.TryGetValue(workerID, out w))
       {
         if (w.Equals(w))
@@ -192,7 +204,7 @@ namespace PuppetMaster
     // Re-enables a given worker process's JobTracker Functions
     public void UnfreezeJobTracker(int workerID)
     {
-      Worker w;
+      Program w;
       if (workerList.TryGetValue(workerID, out w))
       {
         if (w.Equals(w))
@@ -206,16 +218,16 @@ namespace PuppetMaster
     /// The main entry point for the application.
     /// </summary>
     //[STAThread]
-    void Main(string[] args)
+    static void Main(string[] args)
     {
-      numberPM = Int32.Parse(args[0]);
+      PuppetMaster pm = new PuppetMaster();
+      pm.numberPM = Int32.Parse(args[0]);
 
-      ID = Int32.Parse(args[1]);
-      TcpChannel channel = new TcpChannel(ID);
+      pm.ID = Int32.Parse(args[1]);
+      TcpChannel channel = new TcpChannel(pm.ID);
 
       ChannelServices.RegisterChannel(channel, false);
 
-      PuppetMaster pm = new PuppetMaster();
       RemotingServices.Marshal(pm, "PM", typeof(PuppetMaster));
 
         /*RemotingConfiguration.RegisterWellKnownServiceType(
