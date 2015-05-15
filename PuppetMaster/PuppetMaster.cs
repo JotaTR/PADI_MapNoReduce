@@ -69,6 +69,21 @@ namespace PuppetMaster
           {
             // create an instance of the object
             ClassObj = Activator.CreateInstance(type);
+
+
+                        // Dynamically Invoke the method
+                        /*object[] args = new object[] { txt };
+                        object resultObject = type.InvokeMember("Map",
+                          BindingFlags.Default | BindingFlags.InvokeMethod,
+                               null,
+                               ClassObj,
+                               args);
+                        IList<KeyValuePair<string, string>> result = (IList<KeyValuePair<string, string>>) resultObject;
+                        Console.WriteLine("Map call result was: ");
+                        foreach (KeyValuePair<string, string> p in result) {
+                            Console.WriteLine("key: " + p.Key + ", value: " + p.Value);
+                        }*/
+
           }
         }
       }
@@ -88,7 +103,7 @@ namespace PuppetMaster
       // Parse worker URL
       char[] urlDelimiterChars = {':' , '/'};
       string[] parsedURL = workerURL.Split(urlDelimiterChars);
-      int workerPort = Int32.Parse(parsedURL[2]);
+      int workerPort = Int32.Parse(parsedURL[4]);
 
       // Show Message for testing - remove later
       System.Windows.Forms.MessageBox.Show("ID: " + id + " Port: " + workerPort);
@@ -165,9 +180,9 @@ namespace PuppetMaster
       Program w;
       if(workerList.TryGetValue(workerID, out w))
       {
-        if (w.Equals(w))
+        if (w._W)
         {
-
+          w._freeze = true;
         }
       }
     }
@@ -179,9 +194,9 @@ namespace PuppetMaster
       Program w;
       if (workerList.TryGetValue(workerID, out w))
       {
-        if (w.Equals(w))
+        if (w._W && w._freeze)
         {
-
+          w._freeze = false;
         }
       }
     }
@@ -193,9 +208,9 @@ namespace PuppetMaster
       Program w;
       if (workerList.TryGetValue(workerID, out w))
       {
-        if (w.Equals(w))
+        if (w._JT)
         {
-
+          w._freeze = true;
         }
       }
     }
@@ -207,9 +222,9 @@ namespace PuppetMaster
       Program w;
       if (workerList.TryGetValue(workerID, out w))
       {
-        if (w.Equals(w))
+        if (w._JT && w._freeze)
         {
-
+          w._freeze = false;
         }
       }
     }
