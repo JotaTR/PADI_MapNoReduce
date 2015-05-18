@@ -1,81 +1,56 @@
-using System;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
+using System;
 using System.Net.Sockets;
-using System.Threading;
-
-
-/// CHANGE TO USER APPLICATION: Renato
-
+using System.IO;
+using PADI_MapNoReduce;
 
 
 namespace PADI_MapNoReduce {
+    class Program {
+        static void Main(string[] args) {
+            string mapperName = args[0];
+            TcpChannel channel = new TcpChannel(10001);
+            ChannelServices.RegisterChannel(channel, true);
+            WorkerInterface mt = (WorkerInterface)Activator.GetObject(
+                typeof(WorkerInterface),
+                "tcp://localhost:30001/Worker");
+            try {
+                byte[] code = File.ReadAllBytes(args[1]);
+                Console.WriteLine(mt.SendMapperService(code, mapperName, splitNumber, clientURL, file ));
+            } catch (SocketException) {
+                System.Console.WriteLine("Could not locate server");
+            }
+            Console.ReadLine();
+        }
+    
+public static int splitNumber { get; set; }
+public static string clientURL { get; set; }
+public static string file { get; set; }}
 
-	class Client {
-       
-        public delegate string RemoteAsyncDelegate();
-        // This is the call that the AsyncCallBack delegate will reference.
-        public static void OurRemoteAsyncCallBack(IAsyncResult ar)
+     class Cliente
+    {
+        private static TcpChannel channel;
+        String idCliente;
+
+
+        public Cliente(TcpChannel canal, String id)
         {
-            // Alternative 2: Use the callback to get the return value
-            RemoteAsyncDelegate del = (RemoteAsyncDelegate)((AsyncResult)ar).AsyncDelegate;
-            Console.WriteLine("\r\n**SUCCESS**: Result of the remote AsyncCallBack: " + del.EndInvoke(ar));
-
-            return;
+            channel = canal;
+            idCliente = id;
         }
 
-		static void Main() {
-			
-            TcpChannel channel = new TcpChannel();
-			ChannelServices.RegisterChannel(channel,true);
+        public void submit (string inputPath, int splits, string outputPath, MapNoReduce,  ) {
 
-			MyRemoteObject obj = (MyRemoteObject) Activator.GetObject(
-				typeof(MyRemoteObject),
-				"tcp://localhost:8086/MyRemoteObjectName");
+        }
 
-	 		try
-	 		{
-                clsPerson p = new clsPerson();
-                p.FirstName = "John";
-                p.MI = "A";
-                p.LastName = "Smith";
-                obj.write_XML(p);
-                Console.WriteLine( obj.read_XML());
+        public void sendSplit(Worker worker){
 
-                // change this to true to use the callback (alt.2)
-                bool useCallback = false;
+        }
 
-                if (!useCallback)
-                {
-                    // Create delegate to remote method
-                    RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(obj.read_XML);
-                    // Call delegate to remote method
-                    IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
+        public void receiveOutput(Worker worker){
 
-                    // Wait for the end of the call and then explictly call EndInvoke
-                    RemAr.AsyncWaitHandle.WaitOne();
-                    Console.WriteLine(RemoteDel.EndInvoke(RemAr));
-
-                } else {
-                    // Create delegate to remote method
-                    RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(obj.read_XML);
-                    // Create delegate to local callback
-                    AsyncCallback RemoteCallback = new AsyncCallback(Client.OurRemoteAsyncCallBack);
-                    
-                    // Call remote method
-                    IAsyncResult RemAr = RemoteDel.BeginInvoke(RemoteCallback, null);
-                }
-
-
-	 		}
-	 		catch(SocketException)
-	 		{
-	 			System.Console.WriteLine("Could not locate server");
-	 		}
-
-			Console.ReadLine();
-		}
-	}
+        }
+     }
 }
