@@ -249,9 +249,10 @@ namespace Worker_JobTracker
                 //WRONG COMBINATION
             }
             //lança TRHEAD para verificar a VIDA dos WORKERS e dos JT
-            ThreadPool.QueueUserWorkItem(new WaitCallback(this.checkWorkerLifeThread), new object());
-            ThreadPool.QueueUserWorkItem(new WaitCallback(this.checkJobTrackerLifeThread), new object());
+            ThreadPool.QueueUserWorkItem(new WaitCallback(this.checkLifeThread), new object());
         }
+
+
 
         public String createNodeURL(int port, String serviceURL)
         {
@@ -285,9 +286,8 @@ namespace Worker_JobTracker
                 //cria subJobW para guardar na list de subJobW do JT e para enviar ao Worker
                 subJobW_list.Add( new SubJobW(this.workers_list[i].id, this.id, client_address, text_file, taskList) );
 
-                //atribui a task ao worker
-                service = (WorkerServices)Activator.GetObject(typeof(WorkerServices), this.workers_list[i].address);
-                service.attributeTaskService(new SubJobW(this.workers_list[i].id, this.id, client_address, text_file, taskList));
+                //Lança Thread para enviar os SubJobs aos workers
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.submitSubJobThread), new SubJobArguments(this.workers_list[i].id, this.id, this.workers_list[i].address, client_address, text_file, taskList));
 
                 //incrementa contador
                 i++;
@@ -302,6 +302,32 @@ namespace Worker_JobTracker
                     service.addSubJobList(subJobW_list);
                 }                
             }
+        }
+
+        public void replaceWorker(int old_workerId, int new_workerId)
+        {
+            //Hipotese1 pode passar por mudar o id e o timestamp do worker do subJobW que está lento. Como o metedo é invocado como referencia remota da proxima vez que o node pedir uma task já não tem lá nada para ele
+            SubJobW oldWorker_subjob = this.subJobW_list.Find(x => x.workerId == old_workerId);
+            SubJobW newWorker_subjob = this.subJobW_list.Find(x => x.workerId == new_workerId);
+            
+            oldWorker_subjob.workerId = new_workerId;
+
+            newWorker_subjob.starting_unixTimeStamp = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds; ;
+            newWorker_subjob.workerId = old_workerId;
+            newWorker_subjob.initial_task_nbr = newWorker_subjob.taskList.Count;
+
+            //Hipotese 2 caso a 1 não seja possivel
+            Worker oldWorker = this.workers_list.Find(x => x.id == old_workerId);
+            Worker newWorker = this.workers_list.Find(x => x.id == new_workerId);
+
+            //Stop the work of the slow node
+            WorkerServices WorkerService = (WorkerServices)Activator.GetObject(typeof(WorkerServices), oldWorker.address);
+           //TODO: WorkerService.unassigTasks(oldWorker.id);
+
+            //assign the same work to another node
+            WorkerService = (WorkerServices)Activator.GetObject(typeof(WorkerServices), newWorker.address);
+            WorkerService.removeWorkerService(newWorker.id);
+               
         }
 
         /************************
@@ -460,13 +486,13 @@ namespace Worker_JobTracker
         /**************************
          * THREADS
         ***************************/
-        public void checkJobTrackerLifeThread(object arg)
+        public void checkLifeThread(object arg)
         {
-            Console.WriteLine("Thread checkJobTrackerLife started");
+            Console.WriteLine("checkLifeThread starting...");
             WorkerInterface service;
             while (true)
             {
-                if (this.freeze == false && this.W == true && this.JT == true)//JB replica and worker node
+                if (this.freeze == false && this.W == true && this.JT == true)//JT replica node (is also worker)
                 {
                     Console.WriteLine(assignedJobTracker.address);
                     service = (WorkerInterface)Activator.GetObject(typeof(WorkerInterface), assignedJobTracker.address);
@@ -478,31 +504,26 @@ namespace Worker_JobTracker
                         this.promoteToJobTracker();//auto promove-se a REPLICA
                         if (workers_list.Count > 0)
                         {
+                            //pode ser PassedBrReferende e não ByValue
                             service = (WorkerInterface)Activator.GetObject(typeof(WorkerInterface), this.workers_list[0].address);
                             service.promoteToReplicaService();
                         }
                     }
                     Console.WriteLine("Thread checkJobTrackerLife running");
                 }
-                System.Threading.Thread.Sleep(5000);//espera 5seg
-            }
-        }
-
-        private void checkWorkerLifeThread(object arg)
-        {
-            WorkerInterface pingService;
-            Console.WriteLine("Thread checkWorkerLifeThread started");
-            while (true)
-            {
-                if (this.freeze == false && this.W == false && this.JT == true)//JB replica and worker node
+                else if (this.freeze == false && this.W == false && this.JT == true)//JB node
                 {
-
-                    //send a ping message to every workers
+                    int total_workers_time = 0;
+                    int total_completed_tasks = 0;
+                    double average_time_to_complete_task;
+                    //asks for a state message to every workers
                     foreach (Worker w in this.workers_list)
                     {
+                        //pode ser PassedBrReferende e não ByValue
+                        service = (WorkerInterface)Activator.GetObject(typeof(WorkerInterface), w.address);
+                        WorkerState stateWorker = service.askNodeInfoService();
 
-                        pingService = (WorkerInterface)Activator.GetObject(typeof(WorkerInterface), w.address);
-                        WorkerState stateWorker = pingService.askNodeInfoService();
+                        SubJobW subjob = this.subJobW_list.Find(x => x.workerId == w.id);
 
                         //Worker que não responde!
                         if (stateWorker == null)
@@ -528,14 +549,64 @@ namespace Worker_JobTracker
                             }
 
                         }
+                        else//Se o worker responde vamos verificar o seu desempenho
+                        {
+                            int tasks_exected = subjob.initial_task_nbr - stateWorker.tasks_remaining;//calcula numero de tarefas executadas até agora
+                            int elapsed_time = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds - this.subJobW.starting_unixTimeStamp;//calcula o tempo que decorreu entre
+                            w.timePerTask = elapsed_time / tasks_exected;
+                            total_workers_time += elapsed_time;
+                            total_completed_tasks += tasks_exected;
+                        }
 
                     }
+
+                    average_time_to_complete_task = total_completed_tasks / total_workers_time;
+
+                    foreach (Worker w in this.workers_list)
+                    {
+                        //verifica se o worker demora pelo menos o dobro do tempo que a média dos workers.
+                        if( (2 * average_time_to_complete_task)  < w.timePerTask ){
+
+                            foreach (Worker freeWorker in this.workers_list)
+                            {
+                                if (freeWorker.ready == true)
+                                {
+                                    //TODO: Code to replace worker
+                                    this.replaceWorker(w.id, freeWorker.id);
+                                }
+                            }
+                        }
+                           
+                    }
+
+
                     Console.WriteLine("Thread checkWorkerLife running");
                 }//if end
                 System.Threading.Thread.Sleep(5000);//espera 5seg
-            }//While end
+            }
         }
 
+
+        //SubmitJob Threads
+        public void submitJobThread(JobArguments arg)
+        {
+            JobArguments job = (JobArguments)arg;
+            WorkerServices service = (WorkerServices)Activator.GetObject(typeof(WorkerServices), job.address);
+            service.submitSubJobService(job.nbr_splits, job.clientAddress, job.text_file);
+
+        }
+
+        //SubmitJob Threads
+        public void submitSubJobThread(SubJobArguments arg)
+        {
+            SubJobArguments subjob = (SubJobArguments)arg;
+
+            //atribui a task ao worker
+            WorkerServices service = (WorkerServices)Activator.GetObject(typeof(WorkerServices), subjob.address);
+            service.attributeTaskService(new SubJobW(subjob.workerId, subjob.jobTrackerId, subjob.clientAddress, subjob.text_file, subjob.task_list));
+
+
+        }
 
 
         /**************************
@@ -549,23 +620,12 @@ namespace Worker_JobTracker
             
             Program JT1 = new Program(1, pupperMasterURL, serviceURL, entryURL);
             JT1.init();
-            if(JT1.W == false)
-                Console.WriteLine("W flag is false");
-
-            Console.WriteLine("main: JT1 as started");
-
-            List<int> splits = JT1.splitJobs(10, 19);
-
-            foreach (int split in splits)
-            {
-                Console.WriteLine(String.Concat("split size = ", split));
-            }
-
-
+            
             System.Console.ReadLine();
             Program W1 = new Program(2, pupperMasterURL, serviceURL, JT1.address);
             W1.init();
             Console.WriteLine("main: W1 as started");
+            Console.WriteLine(W1.assignedJobTracker.address);
             System.Console.ReadLine();
         }
     }
@@ -610,8 +670,9 @@ namespace Worker_JobTracker
                     }
                     else { //Se é outro
                         //SERVICES
-                        service = (WorkerServices)Activator.GetObject(typeof(WorkerServices), p.jobtracker_list[i].address);
-                        service.submitSubJobService(subjobSize, client_address, text_file);
+                        //lança TRHEAD para enviar o Job aos JT
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(p.submitJobThread), new JobArguments(subjobSize, p.jobtracker_list[i].address, client_address, text_file));
+                        
                     }
                     i++;
                 }
@@ -703,12 +764,12 @@ namespace Worker_JobTracker
             WorkerState ws;
             if (p.JT == true && p.W == false)//JobTracker
             {
-                ws = new WorkerState(p.ready, p.freeze, p.subJobW);
+                ws = new WorkerState(p.ready, p.freeze, p.subJobW.taskList.Count);
                 return ws;
             }
             else
             {
-                ws = new WorkerState(p.ready, p.freeze,null);
+                ws = new WorkerState(p.ready, p.freeze,0);
             }
             return ws;
         }

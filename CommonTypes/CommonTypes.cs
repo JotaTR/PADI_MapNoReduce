@@ -14,7 +14,7 @@ namespace PADI_MapNoReduce
  
     public class Worker
     {
-        public double rank;//classificação de fiabilidade (contactados primeiro)
+        public double timePerTask;//classificação de fiabilidade (contactados primeiro)
         public String address;
         public int id;
         public bool replica;
@@ -63,13 +63,13 @@ namespace PADI_MapNoReduce
     {
         public bool ready;//verifica se o nó nestá livre ou está a trabalhar
         public bool freeze;//permite para a execução do node
-        public SubJobW subJobW;
+        public int tasks_remaining;
 
-        public WorkerState(bool ready, bool freeze, SubJobW subJobW)
+        public WorkerState(bool ready, bool freeze, int tasks_remaining)
         {
             this.ready = ready;
             this.freeze = freeze;
-            this.subJobW = subJobW;
+            this.tasks_remaining = tasks_remaining;
         }
     }
 
@@ -81,6 +81,8 @@ namespace PADI_MapNoReduce
         public int jobTrackerId;
         public String clientAddress;
         public String text_file;
+        public int starting_unixTimeStamp;
+        public int initial_task_nbr;
 
         public SubJobW(int workerId, int jobTrackerId, String clientAddress, String text_file, List<int> taskList)
         {
@@ -89,8 +91,49 @@ namespace PADI_MapNoReduce
             this.jobTrackerId = jobTrackerId;
             this.clientAddress = clientAddress;
             this.text_file = text_file;
+            this.initial_task_nbr = taskList.Count;
+            this.starting_unixTimeStamp = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
         }
 
+    }
+
+    public class JobArguments
+    {
+
+        public int nbr_splits;
+        public String clientAddress;
+        public String text_file;
+        public String address;
+
+        public JobArguments(int nbr_splits, String address, String clientAddress, String text_file)
+        {
+            this.address = address;
+            this.nbr_splits = nbr_splits ;
+            this.clientAddress = clientAddress;
+            this.text_file = text_file;
+        }
+    }
+
+    public class SubJobArguments
+    {
+
+        public String clientAddress;
+        public String text_file;
+        public String address;
+        public List<int> task_list;
+        public int workerId;
+        public int jobTrackerId;
+
+        public SubJobArguments(int workerId, int jobTrackerId, String address, String clientAddress, String text_file, List<int> task_list)
+        {
+            this.address = address;
+            this.clientAddress = clientAddress;
+            this.text_file = text_file;
+            this.task_list = task_list;
+            this.workerId = workerId;
+            this.jobTrackerId = jobTrackerId;
+
+        }
     }
         
 
@@ -102,9 +145,9 @@ namespace PADI_MapNoReduce
          * JOB TRACKER INTERFACE
         **********************/
         //Permite que o cliente submeta um novo Job
-        String submitJobService(int split_number);
+        String submitJobService(int split_number, String client_address, string text_file);
         //Permite que o Job seja dividido por vários JobTrackers
-        void submitSubJobService(int split_number);
+        void submitSubJobService(int split_number, String client_address, string text_file);
 
         //permite obter a lista de JT
         List<JobTracker> getJTlistService();
