@@ -230,13 +230,15 @@ namespace PADI_MapNoReduce
         public String clientAddress;
         public String text_file;
         public String address;
+        public int startingSplit_nbr;
 
-        public JobArguments(int nbr_splits, String address, String clientAddress, String text_file)
+        public JobArguments(int nbr_splits, String address, String clientAddress, String text_file, int startingSplit_nbr)
         {
             this.address = address;
             this.nbr_splits = nbr_splits ;
             this.clientAddress = clientAddress;
             this.text_file = text_file;
+            this.startingSplit_nbr = startingSplit_nbr;
         }
     }
 
@@ -270,9 +272,9 @@ namespace PADI_MapNoReduce
          * JOB TRACKER INTERFACE
         **********************/
         //Permite que o cliente submeta um novo Job
-        String submitJobService(int split_number, String client_address, string text_file);
+        String submitJobService(int split_number, String client_address, String text_file);
         //Permite que o Job seja dividido por vários JobTrackers
-        void submitSubJobService(int split_number, String client_address, string text_file);
+        void submitSubJobService(int split_number, String client_address, String text_file, int startingSplit_nbr);
 
         /**********************
          * WORKER INTERFACES
@@ -371,6 +373,14 @@ namespace PADI_MapNoReduce
         bool SendMapperService(byte[] code, string className, int splitNumber, String clientURL, String file);
     }
 
+
+    //Worker + Replica Interface
+    public interface ClientInterfaceRef : IMapperTransfer
+    {
+        SharedClass provideTasks(int taskId, String text_file);
+    }
+
+
 }
 
 
@@ -378,34 +388,4 @@ namespace PADI_MapNoReduce
 
 
 
-
-    /*
-	public class MyRemoteObject : MarshalByRefObject  {
-
-
-        // LOCAL METHOD INIT
-        public void INIT()
-        {
-
-        }
-
-        // LOCAL METHOD SUBMIT
-        public void SUBMIT(string filepath, int nTasks, string outputPath, IMap mapImplementation)
-        {
-          // UserApplication (and PuppetMaster, for testing) call this method in order to send new mapping jobs to Server(Workers)
-        }
-
-
-        // REMOTE Provide Tasks
-        public void ProvideTasks(string textbegin, string textEnd)
-        {
-          // Server(Workers) call this method in order to receive the Task they are supposed to work on
-        }
-
-        // REMOTE Receive Output
-        public void ReceiveOutput(string processedTask)
-        {
-          // Server(Workers) call this method in order to send the client the result of processing the Tasks
-        }
-  }
-     * */
+   

@@ -7,4 +7,3 @@ D:\Workspaces\Visual Studio\PADI_MapNoReduce\CommonTypes\bin\Debug\CommonTypes.d
 D:\Workspaces\Visual Studio\PADI_MapNoReduce\CommonTypes\bin\Debug\CommonTypes.pdb
 D:\Workspaces\Visual Studio\PADI_MapNoReduce\CommonTypes\obj\Debug\CommonTypes.dll
 D:\Workspaces\Visual Studio\PADI_MapNoReduce\CommonTypes\obj\Debug\CommonTypes.pdb
-D:\Workspaces\Visual Studio\PADI_MapNoReduce\CommonTypes\obj\Debug\CommonTypes.csprojResolveAssemblyReference.cache

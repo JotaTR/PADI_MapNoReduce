@@ -230,7 +230,7 @@ namespace Worker_JobTracker
                 if (!jobTrackerAddress.Equals(""))//Verifica se não é o unico na rede
                 {
                     WorkerServicesRef getJTlistService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), assignedJobTracker.address);
-                    jobtracker_list = getJTlistService.getJTlistService();//TODO : marshallByValue para que cada JobTracker tenha tudo localmente
+                    jobtracker_list = getJTlistService.getJTlistService();
 
                 }
 
@@ -259,7 +259,6 @@ namespace Worker_JobTracker
                 System.Console.WriteLine("Sou um Worker com funcoes de replica.");
                 
                 //Pede lista de JobTrackers e de Workers
-                //TODO :  marshallByValue para que cada Replica tenha tudo localmente
                 WorkerServicesRef JTServiceReplica = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), assignedJobTracker.address);
                 this.jobtracker_list = JTServiceReplica.getJTlistService();//recebe lista de JT
                 this.workers_list = JTServiceReplica.getWlistService();//recebe lista de W do HT
@@ -287,7 +286,7 @@ namespace Worker_JobTracker
         /************************
          * Metodos PARA O JOB TRACKER comunicar com o WORKER
         *************************/
-        public void submitSubJob(int split_number, String client_address, string text_file)
+        public void submitSubJob(int split_number, String client_address, string text_file, int startingSplit_nbr)
         {
             WorkerServicesRef service;
 
@@ -295,7 +294,6 @@ namespace Worker_JobTracker
             List<int> nbrTaskWorkerList = this.splitJobs(this.workers_list.Count(), split_number);//contem o numero de Task que cada Worker vai executar (posição = worker)
             List<int> taskList;
             int i = 0;
-            int split_count = 1;
             foreach (int subjobSize in nbrTaskWorkerList)//enviar cada subJob a cada um dos JobTrackers
             {   
 
@@ -303,15 +301,15 @@ namespace Worker_JobTracker
                 //cria a numeração das tasks para cada worker
                 for (int j = 0; j < subjobSize; j++)
                 {
-                    taskList.Add(split_count);
-                    split_count++;
+                    taskList.Add(startingSplit_nbr);
+                    startingSplit_nbr++;
                 }
 
                 //cria subJobW para guardar na list de subJobW do JT e para enviar ao Worker
                 subJobW_list.Add( new SubJobW(this.workers_list[i].id, this.id, client_address, text_file, taskList) );
-
-                //Lança Thread para enviar os SubJobs aos workers
-                ThreadPool.QueueUserWorkItem(new WaitCallback(this.submitSubJobThread), new SubJobArguments(this.workers_list[i].id, this.id, this.workers_list[i].address, client_address, text_file, taskList));
+                
+                //Lança Thread para enviar os SubJobs aos workersa
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.executeSubJobThread), new SubJobArguments(this.workers_list[i].id, this.id, this.workers_list[i].address, client_address, text_file, taskList));
 
                 //incrementa contador
                 i++;
@@ -361,13 +359,13 @@ namespace Worker_JobTracker
         
 
         //executa trabalho
-        private void execute_task(int taskId, String clientAddress, Stirng text_file)
+        private void execute_task(int taskId, String text_file, ClientInterfaceRef service)
         {
             
             String split_string = getTask(taskId);
 
             //Contacta cliente e pede Split
-
+            SharedClass taskClass = service.provideTasks(taskId, text_file);
 
 
             String split_output = "";
@@ -621,28 +619,30 @@ namespace Worker_JobTracker
         {
             JobArguments job = (JobArguments)arg;
             WorkerServicesRef service = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), job.address);
-            service.submitSubJobService(job.nbr_splits, job.clientAddress, job.text_file);
+            service.submitSubJobService(job.nbr_splits, job.clientAddress, job.text_file, job.startingSplit_nbr);
 
         }
 
-        //SubmitJob Threads
-        public void submitSubJobThread(Object arg)
-        {
-            SubJobArguments subjob = (SubJobArguments)arg;
-
-            //atribui a task ao worker
-            WorkerServicesRef service = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), subjob.address);
-            service.attributeTaskService(new SubJobW(subjob.workerId, subjob.jobTrackerId, subjob.clientAddress, subjob.text_file, subjob.task_list));
-
-        }
-
+//        //SubmitJob Threads
+//        public void submitSubJobThread(Object arg)
+//        {
+//            SubJobArguments subjob = (SubJobArguments)arg;
+//
+//            //atribui a task ao worker
+//            WorkerServicesRef service = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), subjob.address);
+//            service.attributeTaskService(new SubJobW(subjob.workerId, subjob.jobTrackerId, subjob.clientAddress, subjob.text_file, subjob.task_list));
+//
+//        }
+//
         //Executa um conunto de tasks
         public void executeSubJobThread(object arg)
         {
             this.ready = false;
+            ClientInterfaceRef service = (ClientInterfaceRef)Activator.GetObject(typeof(ClientInterfaceRef), subJobW.clientAddress);
+            
             foreach (int taskId in this.subJobW.taskList)
             {
-                execute_task(taskId, subJobW.clientAddress, subJobW.text_file);
+                execute_task(taskId, subJobW.text_file, service);
             }
             this.ready = true;
         }
@@ -673,6 +673,9 @@ namespace Worker_JobTracker
             Console.WriteLine("main: W2 as started");
             Console.WriteLine(W2.assignedJobTracker.address);
             System.Console.ReadLine();
+
+            System.Threading.Thread.Sleep(5000);//espera 5seg
+
         }
     }
 
@@ -762,18 +765,20 @@ namespace Worker_JobTracker
 
                 List<int> subJobSizeList = p.splitJobs(p.jobtracker_list.Count(), split_number);//Numero das task para cada no (lista de igual dimensão)
                 
-                int i = 0; 
+                int i = 0;
+                int subJobCounter = 0;
                 foreach (int subjobSize in subJobSizeList)//enviar cada subJob a cada um dos JobTrackers
                 {
                     if (p.jobtracker_list[i].id == p.id)//Se é o proprio
                     {
-                        p.submitSubJob(subjobSize, client_address, text_file);
+                        p.submitSubJob(subjobSize, client_address, text_file, subJobCounter);
+                        subJobCounter += subjobSize;
                     }
                     else { //Se é outro
                         //SERVICES
                         //lança TRHEAD para enviar o Job aos JT
-                        ThreadPool.QueueUserWorkItem(new WaitCallback(p.submitJobThread), new JobArguments(subjobSize, p.jobtracker_list[i].address, client_address, text_file));
-                        
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(p.submitJobThread), new JobArguments(subjobSize, p.jobtracker_list[i].address, client_address, text_file, subJobCounter));
+                        subJobCounter += subjobSize;
                     }
                     i++;
                 }
@@ -785,9 +790,9 @@ namespace Worker_JobTracker
         }
 
         //Permite que o Job seja dividido por vários JobTrackers
-        public void submitSubJobService(int split_number, String client_address, string text_file)
+        public void submitSubJobService(int split_number, String client_address, string text_file, int startingSplit_nbr)
         {
-            p.submitSubJob(split_number, client_address, text_file);
+            p.submitSubJob(split_number, client_address, text_file, startingSplit_nbr);
         }
 
 
