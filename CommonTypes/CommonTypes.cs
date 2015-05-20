@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 
 /// CHANGE TO CLIENT: Renato
 
@@ -20,7 +21,6 @@ namespace PADI_MapNoReduce
         public bool replica;
         public bool ready;//true -> Pode receber novas Tasks; false -> Está ocupado com uma task
 
-
         public Worker(String address, int id, bool replica)
         {
 
@@ -29,6 +29,55 @@ namespace PADI_MapNoReduce
             this.replica = replica;
             ready = true;
 
+        }
+
+        public Worker(String workerString)
+        {
+            string[] attributes = workerString.Split(new string[] { ";" }, StringSplitOptions.None);
+            
+            this.timePerTask = double.Parse(attributes[0], System.Globalization.CultureInfo.InvariantCulture);
+            this.address = attributes[1];
+            this.id = Int32.Parse(attributes[2]); 
+            
+            if (attributes[3] == "false")
+            {
+                this.replica = false;
+            }
+            else
+            {
+                this.replica = true;
+            }
+
+            if (attributes[4] == "false")
+            {
+                this.ready = false;
+            }
+            else
+            {
+                this.ready = true;
+            }
+        }
+
+        public String toString()
+        {
+
+            String workerString;
+            workerString = String.Concat(this.timePerTask, ";", this.address, ";", this.id, ";");
+            if(this.replica == false)
+            {
+                workerString = workerString + "false;";
+            }else{
+                workerString = workerString + "true;";
+            }
+
+            if(this.ready == false)
+            {
+                workerString = workerString + "false";
+            }else{
+                workerString = workerString + "true";
+            }
+
+            return workerString;
         }
 
     }
@@ -44,6 +93,21 @@ namespace PADI_MapNoReduce
             this.address = address;
             this.id = id;
             this.nbr_worker = 0;
+        }
+
+        public JobTracker(String jobTrackerString)
+        {
+            string[] attributes = jobTrackerString.Split(new string[] { ";" }, StringSplitOptions.None);
+            this.address = attributes[0];
+            this.id = Int32.Parse(attributes[1]);
+            this.nbr_worker = Int32.Parse(attributes[2]);            
+        }
+
+        public String toString()
+        {
+
+            String workerString = String.Concat(this.address, ";", this.id, ";", this.nbr_worker, ";");
+            return workerString;
         }
 
         public void incrementWorker(){
@@ -95,6 +159,49 @@ namespace PADI_MapNoReduce
             this.starting_unixTimeStamp = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
         }
 
+        public SubJobW(String subJobWString)
+        {
+   
+            string[] attributes = subJobWString.Split(new string[] { ";" }, StringSplitOptions.None);
+
+            //cria taskList
+            string[] taskListString = attributes[0].Split(new string[] { "," }, StringSplitOptions.None);
+            this.taskList = new List<int>();
+            foreach (String taskString in taskListString)
+            {
+                taskList.Add(Int32.Parse(taskString));
+            }
+            this.workerId = Int32.Parse(attributes[1]);
+            this.jobTrackerId = Int32.Parse(attributes[2]);
+            this.clientAddress = attributes[3];
+            this.text_file = attributes[4];
+            this.starting_unixTimeStamp = Int32.Parse(attributes[5]);
+            this.initial_task_nbr = Int32.Parse(attributes[6]);
+
+        }
+
+        public String toString()
+        {
+            
+            String workerString = "";
+            int counter = 1;
+            foreach (int task in taskList)
+            {
+                if (counter == taskList.Count)
+                {
+                    workerString = String.Concat(workerString, task, ";");
+                    counter++;
+                }
+                else
+                {
+                    workerString = String.Concat(workerString, task, ",");
+                    counter++;
+                }
+            }
+            workerString = String.Concat(workerString, ";", this.workerId, ";", this.jobTrackerId, ";", this.clientAddress, ";", this.text_file, ";", this.starting_unixTimeStamp, ";", this.initial_task_nbr);
+            
+            return workerString;
+        }
     }
 
     public class JobArguments
@@ -135,10 +242,42 @@ namespace PADI_MapNoReduce
 
         }
     }
-        
+    
+    //Worker + Replica Interface
+//    public interface WorkerInterfaceVal : ISerializable
+//    {
+//
+//        /********************
+//        * WILL BE MARSHELED BY VALUE
+//       ********************/
+//       //permite obter a lista de JT (usado por JT e WR a entrar na rede)
+//       List<JobTracker> getJTlistService();
+//
+//       //permite obter a lista de W (usado pelo WR a entrar na rede)
+//       List<Worker> getWlistService();
+//
+//       //adiciona um jt da lista (usado pelos JT a entrar na rede)
+//       void addJTService(JobTracker jt);
+//
+//       //remove um jt da lista (usado pelos JT a entrar na rede)
+//       void removeJTService(int id);
+//
+//       //permite remover um Worker da replica (usado pelos JT quando é detectado que o Worker se desligou)
+//       void removeWorkerService(int id);
+//
+//       //permite adicionar um Worker da replica (usado pelos JT quando um novo worker se liga à rede)
+//       void addWorkerService(Worker w);
+//
+//       //permite adicionar a replica o conjunto de tasks atribuidos a cada workers
+//       void addSubJobList(List<SubJobW> subjobList);
+//
+//       //actualiza o JobTracker do node (Após o WR tomar o lugar o JT)
+//       void updateJobTracker(JobTracker jt);
+//
+//    }
 
     //Worker + Replica Interface
-    public interface WorkerInterface : IMapperTransfer
+    public interface WorkerInterfaceRef : IMapperTransfer
     {
 
         /**********************
@@ -148,22 +287,6 @@ namespace PADI_MapNoReduce
         String submitJobService(int split_number, String client_address, string text_file);
         //Permite que o Job seja dividido por vários JobTrackers
         void submitSubJobService(int split_number, String client_address, string text_file);
-
-        //permite obter a lista de JT
-        List<JobTracker> getJTlistService();
-
-        //permite obter a lista de W
-        List<Worker> getWlistService();
-
-
-        //adiciona um jt da lista
-        void addJTService(JobTracker jt);
-
-        //remoce um jt da lista
-        void removeJTService(int id);
-
-        //permite conhecer o seu id
-        int getId();
 
         /**********************
          * WORKER INTERFACES
@@ -177,33 +300,51 @@ namespace PADI_MapNoReduce
         //promove a JobTracker
         void promoteToJobTrackerService();
 
-        //actualiza o JobTracker do node
-        void updateJobTracker(JobTracker jt);
-
         /**********************
          * WORKER REPLICA INTERFACE
         **********************/
         //permite atribuir uma task ao Worker
         void informTaskAttributionService();
 
-        //permite remover um Worker da replica
-        void removeWorkerService(int id);
-
-        //permite adicionar um Worker da replica
-        void addWorkerService(Worker w);
-        
-        //permite adicionar a replica o conjunto de tasks atribuidos a cada workers
-        void addSubJobList(List<SubJobW> subjobList);
-
         /********************
          * Metodos COMUNS
-        ********************/
+        ********************/    
+        //Interface para um novo worker se poder registar num determinado JobTracker
+        String registerWorkerService(int id);//tem que responder ao Worker qual o id/ip do Jobtracker que este se deve associar
+        
+        //permite conhecer o seu id
+        int getId();
+
         //permite conhecer o informação sobre o Worker e permite saber se este está vivo
         WorkerState askNodeInfoService();
 
-        //Interface para um novo worker se poder registar num determinado JobTracker
-        String registerWorkerService(int id);//tem que responder ao Worker qual o id/ip do Jobtracker que este se deve associar
-    
+        /********************
+         * WILL BE MARSHELED BY VALUE
+        ********************/  
+        //permite obter a lista de JT (usado por JT e WR a entrar na rede)
+        String getJTlistService();
+
+        //permite obter a lista de W (usado pelo WR a entrar na rede)
+        String getWlistService();
+
+        //adiciona um jt da lista (usado pelos JT a entrar na rede)
+        void addJTService(String jt);
+
+        //remove um jt da lista (usado pelos JT a entrar na rede)
+        void removeJTService(int id);
+
+        //permite remover um Worker da replica (usado pelos JT quando é detectado que o Worker se desligou)
+        void removeWorkerService(int id);
+
+        //permite adicionar um Worker da replica (usado pelos JT quando um novo worker se liga à rede)
+        void addWorkerService(String w);
+
+        //permite adicionar a replica o conjunto de tasks atribuidos a cada workers
+        void addSubJobList(String subjobList);
+
+        //actualiza o JobTracker do node (Após o WR tomar o lugar o JT)
+        void updateJobTracker(String jt);
+
     }
 
 
@@ -215,6 +356,7 @@ namespace PADI_MapNoReduce
     public interface IMapperTransfer {
         bool SendMapperService(byte[] code, string className, int splitNumber, String clientURL, String file);
     }
+
 }
 
 
