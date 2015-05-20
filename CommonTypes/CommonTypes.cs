@@ -211,14 +211,14 @@ namespace PADI_MapNoReduce
     public class SharedClass
     {
         public byte[] code; 
-        public String classname;
-        public List<int> splits;
+        public String className;
+        public String split;
 
-        public SharedClass(byte[] code, List<int> splits, String classname)
+        public SharedClass(byte[] code, String split, String className)
         {
             this.code = code;
-            this.splits = splits;
-            this.classname = classname;
+            this.split = split;
+            this.className = className;
         }
 
     }
@@ -265,7 +265,7 @@ namespace PADI_MapNoReduce
     }
     
     //Worker + Replica Interface
-    public interface WorkerInterfaceRef : IMapperTransfer
+    public interface WorkerInterfaceRef
     {
 
         /**********************
@@ -334,33 +334,6 @@ namespace PADI_MapNoReduce
         void updateJobTracker(JobTracker jt);
 
 
-
-
-
-//        //permite obter a lista de JT (usado por JT e WR a entrar na rede)
-//        String getJTlistService();
-//
-//        //permite obter a lista de W (usado pelo WR a entrar na rede)
-//        String getWlistService();
-//
-//        //adiciona um jt da lista (usado pelos JT a entrar na rede)
-//        void addJTService(String jt);
-//
-//        //remove um jt da lista (usado pelos JT a entrar na rede)
-//        void removeJTService(int id);
-//
-//        //permite remover um Worker da replica (usado pelos JT quando é detectado que o Worker se desligou)
-//        void removeWorkerService(int id);
-//
-//        //permite adicionar um Worker da replica (usado pelos JT quando um novo worker se liga à rede)
-//        void addWorkerService(String w);
-//
-//        //permite adicionar a replica o conjunto de tasks atribuidos a cada workers
-//        void addSubJobList(String subjobList);
-//
-//        //actualiza o JobTracker do node (Após o WR tomar o lugar o JT)
-//        void updateJobTracker(String jt);
-
     }
 
 
@@ -370,14 +343,17 @@ namespace PADI_MapNoReduce
     }
 
     public interface IMapperTransfer {
-        bool SendMapperService(byte[] code, string className, int splitNumber, String clientURL, String file);
+        void SendMapperService(SharedClass taskClass);
     }
 
 
-    //Worker + Replica Interface
-    public interface ClientInterfaceRef : IMapperTransfer
+    //Client Interface
+    public interface ClientInterface : IMapperTransfer
     {
-        SharedClass provideTasks(int taskId, String text_file);
+        SharedClass provideTask(int taskId, String text_file);
+
+        void deliverTask(IList<KeyValuePair<string, string>> result, String output);
+
     }
 
 

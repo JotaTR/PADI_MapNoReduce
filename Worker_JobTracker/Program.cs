@@ -359,17 +359,17 @@ namespace Worker_JobTracker
         
 
         //executa trabalho
-        private void execute_task(int taskId, String text_file, ClientInterfaceRef service)
+        private void execute_task(int taskId, String text_file, ClientInterface service)
         {
             
             String split_string = getTask(taskId);
 
             //Contacta cliente e pede Split
-            SharedClass taskClass = service.provideTasks(taskId, text_file);
-
-
-            String split_output = "";
-            sendTask(split_output);
+            SharedClass taskClass = service.provideTask(taskId, text_file);
+            
+            //Processa a task
+            sendMapper(taskClass);
+            service.deliverTask(sendMapper(taskClass), text_file);
 
             //retira task da sua lista local
             this.subJobW.taskList.Remove(taskId);
@@ -484,6 +484,41 @@ namespace Worker_JobTracker
 
         }
 
+
+        //Serviço para o CLiente conseguir enviar ao Worker a TASK!
+        public IList<KeyValuePair<string, string>> sendMapper(SharedClass taskClass)
+        {
+            Assembly assembly = Assembly.Load(taskClass.code);
+            // Walk through each type in the assembly looking for our class
+            foreach (Type type in assembly.GetTypes())
+            {
+                if (type.IsClass == true)
+                {
+                    if (type.FullName.EndsWith("." + taskClass.className))
+                    {
+                        // create an instance of the object
+                        object ClassObj = Activator.CreateInstance(type);
+
+                        // Dynamically Invoke the method
+                        object[] args = new object[] { taskClass.split };
+                        object resultObject = type.InvokeMember("Map",
+                            BindingFlags.Default | BindingFlags.InvokeMethod,
+                                null,
+                                ClassObj,
+                                args);
+                        IList<KeyValuePair<string, string>> result = (IList<KeyValuePair<string, string>>)resultObject;
+                        Console.WriteLine("Map call result was: ");
+                        foreach (KeyValuePair<string, string> p in result)
+                        {
+                            Console.WriteLine("key: " + p.Key + ", value: " + p.Value);
+                        }
+                        return result;
+                    }
+                }
+            }
+            throw (new System.Exception("could not invoke method"));
+            //          return true;
+        }
         /**************************
          * THREADS
         ***************************/
@@ -638,7 +673,7 @@ namespace Worker_JobTracker
         public void executeSubJobThread(object arg)
         {
             this.ready = false;
-            ClientInterfaceRef service = (ClientInterfaceRef)Activator.GetObject(typeof(ClientInterfaceRef), subJobW.clientAddress);
+            ClientInterface service = (ClientInterface)Activator.GetObject(typeof(ClientInterface), subJobW.clientAddress);
             
             foreach (int taskId in this.subJobW.taskList)
             {
@@ -805,41 +840,6 @@ namespace Worker_JobTracker
         /***************************
          * WORKER SERVICES
          * ************************/
-        //Serviço para o CLiente conseguir enviar ao Worker a TASK!
-        public bool SendMapperService(byte[] code, string className, int splitNumber, String clientURL, String file )
-        {
-            Assembly assembly = Assembly.Load(code);
-            // Walk through each type in the assembly looking for our class
-            foreach (Type type in assembly.GetTypes())
-            {
-                if (type.IsClass == true)
-                {
-                    if (type.FullName.EndsWith("." + className))
-                    {
-                        // create an instance of the object
-                        object ClassObj = Activator.CreateInstance(type);
-
-                        // Dynamically Invoke the method
-                        object[] args = new object[] { "testValue" };
-                        object resultObject = type.InvokeMember("Map",
-                            BindingFlags.Default | BindingFlags.InvokeMethod,
-                                null,
-                                ClassObj,
-                                args);
-                        IList<KeyValuePair<string, string>> result = (IList<KeyValuePair<string, string>>)resultObject;
-                        Console.WriteLine("Map call result was: ");
-                        foreach (KeyValuePair<string, string> p in result)
-                        {
-                            Console.WriteLine("key: " + p.Key + ", value: " + p.Value);
-                        }
-                        return true;
-                    }
-                }
-            }
-            throw (new System.Exception("could not invoke method"));
-            //          return true;
-        }
-
         //permite atribuir uma task ao Worker
         public void attributeTaskService(SubJobW subjobw)
         {

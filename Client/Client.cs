@@ -26,8 +26,8 @@ namespace PADI_MapNoReduce
             int splitNumber = Int32.Parse(args[3]);
             String clientURL = args[4];
             String file = args[5];
-            WorkerInterface mt = (WorkerInterface)Activator.GetObject(
-                typeof(WorkerInterface),
+            WorkerInterfaceRef mt = (WorkerInterfaceRef)Activator.GetObject(
+                typeof(WorkerInterfaceRef),
                 "tcp://localhost:30001/W");
             try
             {
@@ -84,24 +84,32 @@ namespace PADI_MapNoReduce
                 byte[] code = System.IO.File.ReadAllBytes(dllPath);
             }
 
-            public string[] sendSplit(string filepath, int start, int end)
-            {
-                int nLines = start - end;
-                string[] result = new string[nLines];
-                for (int i = 0; i < nLines; i++)
-                {
-                    result[i] = _textSplit[start + i];
-                }
-                return result;
-            }
-
-            public void receiveOutput(IList<KeyValuePair<string, string>> result, string outputPath)
-            {
-                _result = result;
-                // Send result to output path
-
-                isWaitingResult = false;
-            }
+            
         }
+
+     //Serviços disponibilizadios Pelo no
+    internal class ClientServices : MarshalByRefObject, ClientInterface
+    {
+
+        public SharedClass provideTask(int taskId, String text_file)
+        {
+            int nLines = start - end;
+            string[] result = new string[nLines];
+            for (int i = 0; i < nLines; i++)
+            {
+                result[i] = _textSplit[start + i];
+            }
+            return result;
+        }
+
+        public  void deliverTask( IList<KeyValuePair<string, string>> result, string outputPath)
+        {
+            _result = result;
+            // Send result to output path
+
+            isWaitingResult = false;
+        }
+
+    }
     
 }
