@@ -12,7 +12,7 @@ namespace PADI_MapNoReduce
     /************************
      * Classes
     **************************/
- 
+    [Serializable]
     public class Worker
     {
         public double timePerTask;//classificação de fiabilidade (contactados primeiro)
@@ -31,33 +31,33 @@ namespace PADI_MapNoReduce
 
         }
 
-        public Worker(String workerString)
-        {
-            string[] attributes = workerString.Split(new string[] { ";" }, StringSplitOptions.None);
-            
-            this.timePerTask = double.Parse(attributes[0], System.Globalization.CultureInfo.InvariantCulture);
-            this.address = attributes[1];
-            this.id = Int32.Parse(attributes[2]); 
-            
-            if (attributes[3] == "false")
-            {
-                this.replica = false;
-            }
-            else
-            {
-                this.replica = true;
-            }
-
-            if (attributes[4] == "false")
-            {
-                this.ready = false;
-            }
-            else
-            {
-                this.ready = true;
-            }
-        }
-
+ //       public Worker(String workerString)
+ //       {
+ //           string[] attributes = workerString.Split(new string[] { ";" }, StringSplitOptions.None);
+ //           
+ //           this.timePerTask = double.Parse(attributes[0], System.Globalization.CultureInfo.InvariantCulture);
+ //           this.address = attributes[1];
+ //           this.id = Int32.Parse(attributes[2]); 
+ //           
+ //           if (attributes[3] == "false")
+ //           {
+ //               this.replica = false;
+ //           }
+ //           else
+ //           {
+ //               this.replica = true;
+ //           }
+ //
+ //           if (attributes[4] == "false")
+ //           {
+ //               this.ready = false;
+ //           }
+ //           else
+ //           {
+ //               this.ready = true;
+ //           }
+ //       }
+ //
         public String toString()
         {
 
@@ -82,6 +82,7 @@ namespace PADI_MapNoReduce
 
     }
 
+    [Serializable]
     public class JobTracker
     {
         public String address;
@@ -95,14 +96,14 @@ namespace PADI_MapNoReduce
             this.nbr_worker = 0;
         }
 
-        public JobTracker(String jobTrackerString)
-        {
-            string[] attributes = jobTrackerString.Split(new string[] { ";" }, StringSplitOptions.None);
-            this.address = attributes[0];
-            this.id = Int32.Parse(attributes[1]);
-            this.nbr_worker = Int32.Parse(attributes[2]);            
-        }
-
+//        public JobTracker(String jobTrackerString)
+//        {
+//            string[] attributes = jobTrackerString.Split(new string[] { ";" }, StringSplitOptions.None);
+//            this.address = attributes[0];
+//            this.id = Int32.Parse(attributes[1]);
+//            this.nbr_worker = Int32.Parse(attributes[2]);            
+//        }
+//
         public String toString()
         {
 
@@ -123,6 +124,7 @@ namespace PADI_MapNoReduce
         }
     }
 
+    [Serializable]
     public class WorkerState
     {
         public bool ready;//verifica se o nó nestá livre ou está a trabalhar
@@ -137,6 +139,7 @@ namespace PADI_MapNoReduce
         }
     }
 
+    [Serializable]
     public class SubJobW
     {
      
@@ -159,27 +162,27 @@ namespace PADI_MapNoReduce
             this.starting_unixTimeStamp = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
         }
 
-        public SubJobW(String subJobWString)
-        {
-   
-            string[] attributes = subJobWString.Split(new string[] { ";" }, StringSplitOptions.None);
-
-            //cria taskList
-            string[] taskListString = attributes[0].Split(new string[] { "," }, StringSplitOptions.None);
-            this.taskList = new List<int>();
-            foreach (String taskString in taskListString)
-            {
-                taskList.Add(Int32.Parse(taskString));
-            }
-            this.workerId = Int32.Parse(attributes[1]);
-            this.jobTrackerId = Int32.Parse(attributes[2]);
-            this.clientAddress = attributes[3];
-            this.text_file = attributes[4];
-            this.starting_unixTimeStamp = Int32.Parse(attributes[5]);
-            this.initial_task_nbr = Int32.Parse(attributes[6]);
-
-        }
-
+ //       public SubJobW(String subJobWString)
+ //       {
+ //  
+ //           string[] attributes = subJobWString.Split(new string[] { ";" }, StringSplitOptions.None);
+ //
+ //           //cria taskList
+ //           string[] taskListString = attributes[0].Split(new string[] { "," }, StringSplitOptions.None);
+ //           this.taskList = new List<int>();
+ //           foreach (String taskString in taskListString)
+ //           {
+ //               taskList.Add(Int32.Parse(taskString));
+ //           }
+ //           this.workerId = Int32.Parse(attributes[1]);
+ //           this.jobTrackerId = Int32.Parse(attributes[2]);
+ //           this.clientAddress = attributes[3];
+ //           this.text_file = attributes[4];
+ //           this.starting_unixTimeStamp = Int32.Parse(attributes[5]);
+ //           this.initial_task_nbr = Int32.Parse(attributes[6]);
+ //
+ //       }
+ //
         public String toString()
         {
             
@@ -202,6 +205,22 @@ namespace PADI_MapNoReduce
             
             return workerString;
         }
+    }
+
+    [Serializable]
+    public class SharedClass
+    {
+        public byte[] code; 
+        public String classname;
+        public List<int> splits;
+
+        public SharedClass(byte[] code, List<int> splits, String classname)
+        {
+            this.code = code;
+            this.splits = splits;
+            this.classname = classname;
+        }
+
     }
 
     public class JobArguments
@@ -243,39 +262,6 @@ namespace PADI_MapNoReduce
         }
     }
     
-    //Worker + Replica Interface
-//    public interface WorkerInterfaceVal : ISerializable
-//    {
-//
-//        /********************
-//        * WILL BE MARSHELED BY VALUE
-//       ********************/
-//       //permite obter a lista de JT (usado por JT e WR a entrar na rede)
-//       List<JobTracker> getJTlistService();
-//
-//       //permite obter a lista de W (usado pelo WR a entrar na rede)
-//       List<Worker> getWlistService();
-//
-//       //adiciona um jt da lista (usado pelos JT a entrar na rede)
-//       void addJTService(JobTracker jt);
-//
-//       //remove um jt da lista (usado pelos JT a entrar na rede)
-//       void removeJTService(int id);
-//
-//       //permite remover um Worker da replica (usado pelos JT quando é detectado que o Worker se desligou)
-//       void removeWorkerService(int id);
-//
-//       //permite adicionar um Worker da replica (usado pelos JT quando um novo worker se liga à rede)
-//       void addWorkerService(Worker w);
-//
-//       //permite adicionar a replica o conjunto de tasks atribuidos a cada workers
-//       void addSubJobList(List<SubJobW> subjobList);
-//
-//       //actualiza o JobTracker do node (Após o WR tomar o lugar o JT)
-//       void updateJobTracker(JobTracker jt);
-//
-//    }
-
     //Worker + Replica Interface
     public interface WorkerInterfaceRef : IMapperTransfer
     {
@@ -320,15 +306,15 @@ namespace PADI_MapNoReduce
 
         /********************
          * WILL BE MARSHELED BY VALUE
-        ********************/  
+        ********************/
         //permite obter a lista de JT (usado por JT e WR a entrar na rede)
-        String getJTlistService();
+        List<JobTracker> getJTlistService();
 
         //permite obter a lista de W (usado pelo WR a entrar na rede)
-        String getWlistService();
+        List<Worker> getWlistService();
 
         //adiciona um jt da lista (usado pelos JT a entrar na rede)
-        void addJTService(String jt);
+        void addJTService(JobTracker jt);
 
         //remove um jt da lista (usado pelos JT a entrar na rede)
         void removeJTService(int id);
@@ -337,13 +323,41 @@ namespace PADI_MapNoReduce
         void removeWorkerService(int id);
 
         //permite adicionar um Worker da replica (usado pelos JT quando um novo worker se liga à rede)
-        void addWorkerService(String w);
+        void addWorkerService(Worker w);
 
         //permite adicionar a replica o conjunto de tasks atribuidos a cada workers
-        void addSubJobList(String subjobList);
+        void addSubJobList(List<SubJobW> subjobList);
 
         //actualiza o JobTracker do node (Após o WR tomar o lugar o JT)
-        void updateJobTracker(String jt);
+        void updateJobTracker(JobTracker jt);
+
+
+
+
+
+//        //permite obter a lista de JT (usado por JT e WR a entrar na rede)
+//        String getJTlistService();
+//
+//        //permite obter a lista de W (usado pelo WR a entrar na rede)
+//        String getWlistService();
+//
+//        //adiciona um jt da lista (usado pelos JT a entrar na rede)
+//        void addJTService(String jt);
+//
+//        //remove um jt da lista (usado pelos JT a entrar na rede)
+//        void removeJTService(int id);
+//
+//        //permite remover um Worker da replica (usado pelos JT quando é detectado que o Worker se desligou)
+//        void removeWorkerService(int id);
+//
+//        //permite adicionar um Worker da replica (usado pelos JT quando um novo worker se liga à rede)
+//        void addWorkerService(String w);
+//
+//        //permite adicionar a replica o conjunto de tasks atribuidos a cada workers
+//        void addSubJobList(String subjobList);
+//
+//        //actualiza o JobTracker do node (Após o WR tomar o lugar o JT)
+//        void updateJobTracker(String jt);
 
     }
 

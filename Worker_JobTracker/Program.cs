@@ -115,7 +115,7 @@ namespace Worker_JobTracker
             this._id = id;
             this.workers_list = new List<Worker>();
             this.jobtracker_list = new List<JobTracker>();
-
+            this.subJobW_list = new List<SubJobW>();
             this.port = 3000 + this.id;
             this.address = createNodeURL(this.port, this.serviceURL);
 
@@ -230,14 +230,8 @@ namespace Worker_JobTracker
                 if (!jobTrackerAddress.Equals(""))//Verifica se não é o unico na rede
                 {
                     WorkerServicesRef getJTlistService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), assignedJobTracker.address);
-                    String[] jobtracker_StringList = getJTlistService.getJTlistService().Split(new string[] { "|" }, StringSplitOptions.None);
-                    foreach (String jobtrackerString in jobtracker_StringList)
-                    {
-                        if (jobtrackerString != "")
-                        {
-                            this.jobtracker_list.Add(new JobTracker(jobtrackerString));
-                        }
-                    }
+                    jobtracker_list = getJTlistService.getJTlistService();//TODO : marshallByValue para que cada JobTracker tenha tudo localmente
+
                 }
 
                 //Adiciona-se a lista de JT dos outros JT
@@ -245,7 +239,7 @@ namespace Worker_JobTracker
                 foreach (JobTracker existingJT in this.jobtracker_list)
                 {
                     WorkerServicesRef JTService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingJT.address);
-                    JTService.addJTService(jt.toString());
+                    JTService.addJTService(jt);
                 }
 
                 //adiciona-se a si mesmo à sa propria lista.
@@ -267,27 +261,11 @@ namespace Worker_JobTracker
                 //Pede lista de JobTrackers e de Workers
                 //TODO :  marshallByValue para que cada Replica tenha tudo localmente
                 WorkerServicesRef JTServiceReplica = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), assignedJobTracker.address);
-
-                String[] jobtracker_StringList = JTServiceReplica.getJTlistService().Split(new string[] { "|" }, StringSplitOptions.None);
-                foreach (String jobtrackerString in jobtracker_StringList)
-                {
-                    if (jobtrackerString != "")
-                    {
-                        this.jobtracker_list.Add(new JobTracker(jobtrackerString));
-                    }
-                    
-                }
-
-                String[] workers_StringList = JTServiceReplica.getWlistService().Split(new string[] { "|" }, StringSplitOptions.None);
-                foreach (String workerString in workers_StringList)
-                {
-                    if (workerString != "")
-                    {
-                        this.workers_list.Add(new Worker(workerString));
-                    }
-                }   
+                this.jobtracker_list = JTServiceReplica.getJTlistService();//recebe lista de JT
+                this.workers_list = JTServiceReplica.getWlistService();//recebe lista de W do HT
 
                 System.Console.WriteLine("Worker Replica has started fully functional");
+                System.Console.WriteLine("Worker has started fully functional");
 
             }
             else
@@ -343,24 +321,9 @@ namespace Worker_JobTracker
             foreach (Worker w in workers_list)
             {
                 if (w.replica == true)//procura pela replica
-                {   
-                    String jb_listString = "";
-                    int counter = 1;
-                    foreach (SubJobW sjw in this.subJobW_list)
-                    {
-                        if (counter == this.subJobW_list.Count)
-                        {
-                            jb_listString = "" + jb_listString + sjw.toString();
-                        }
-                        else
-                        {
-                            jb_listString = "" + jb_listString + sjw.toString() + "|";
-                        }
-                        counter++;
-                    }
-
+                {
                     service = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), w.address);
-                    service.addSubJobList(jb_listString);
+                    service.addSubJobList(subJobW_list);
                 }                
             }
         }
@@ -398,12 +361,14 @@ namespace Worker_JobTracker
         
 
         //executa trabalho
-        private void execute_task(int taskId)
+        private void execute_task(int taskId, String clientAddress, Stirng text_file)
         {
             
             String split_string = getTask(taskId);
 
-            //codigo para tratar o split
+            //Contacta cliente e pede Split
+
+
 
             String split_output = "";
             sendTask(split_output);
@@ -413,44 +378,15 @@ namespace Worker_JobTracker
   
         }
 
-        //Executa um conunto de tasks
-        public void executeSubJob()
-        {
-            this.ready = false;
-            foreach (int taskId in this.subJobW.taskList)
-            {
-                execute_task(taskId);
-            }
-            this.ready = true;
-
-        }
-
+      
 
         public void promoteToReplica()
         {
             this.JT = true;
             //pede lista de workers da rede ao novo JobTracker (ja esta actalizado)
             WorkerServicesRef JTService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), this.jobtracker_list[0].address);
-            
-            this.jobtracker_list = null;
-            String[] jobtrackerStringList = JTService.getJTlistService().Split(new string[] { "|" }, StringSplitOptions.None);
-            foreach (String jobtrackerString in jobtrackerStringList)
-            {
-                if (jobtrackerString != "")
-                {
-                    this.jobtracker_list.Add(new JobTracker(jobtrackerString));
-                }
-            }
-
-            this.workers_list = null;
-            String[] workers_StringList = JTService.getWlistService().Split(new string[] { "|" }, StringSplitOptions.None);
-            foreach (String workerString in workers_StringList)
-            {
-                if (workerString != "")
-                {
-                    this.workers_list.Add(new Worker(workerString));
-                }
-            }
+            this.jobtracker_list = JTService.getJTlistService();
+            this.workers_list = JTService.getWlistService();
         }
 
         public void promoteToJobTracker()
@@ -459,22 +395,14 @@ namespace Worker_JobTracker
 
             //pede uma nova lista de JobTrackers a um JT arbitrario da sua lista
             WorkerServicesRef JTService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), this.jobtracker_list[0].address);
-            this.jobtracker_list = null;
-            String[] jobtrackerStringList = JTService.getJTlistService().Split(new string[] { "|" }, StringSplitOptions.None);
-            foreach (String jobtrackerString in jobtrackerStringList)
-            {
-                if (jobtrackerString != "")
-                {
-                    this.jobtracker_list.Add(new JobTracker(jobtrackerString));
-                }
-            }
+            this.jobtracker_list = JTService.getJTlistService();
 
             //Adiciona-se a lista de JT dos outros JT e remove o anterior
             JobTracker jtPromoted = new JobTracker(this.address, this.id);
             foreach (JobTracker existingJT in this.jobtracker_list)
             {
                 WorkerServicesRef JTService2 = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingJT.address);
-                JTService2.addJTService(jtPromoted.toString());
+                JTService2.addJTService(jtPromoted);
                 JTService2.removeJTService(this.assignedJobTracker.id);
             }
 
@@ -486,7 +414,7 @@ namespace Worker_JobTracker
             foreach (Worker existingW in this.workers_list)
             {
                 WorkerServicesRef JTService3 = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingW.address);
-                JTService3.updateJobTracker(jtPromoted.toString());
+                JTService3.updateJobTracker(jtPromoted);
             }
 
             //Promove o primeiro Worker da lista a Replica
@@ -565,14 +493,16 @@ namespace Worker_JobTracker
         {
             Console.WriteLine("checkLifeThread starting...");
             WorkerInterfaceRef service;
+            WorkerState jobTrackerState;
+            WorkerState stateWorker;
+            WorkerInterfaceRef promotionService;
+            WorkerServicesRef WorkerService;
             while (true)
             {
                 if (this.freeze == false && this.W == true && this.JT == true)//JT replica node (is also worker)
                 {
-                    Console.WriteLine(assignedJobTracker.address);
                     service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), assignedJobTracker.address);
-                    WorkerState jobTrackerState = service.askNodeInfoService();
-
+                    jobTrackerState = service.askNodeInfoService();
                     //JobTracker que não responde!
                     if (jobTrackerState == null)
                     {
@@ -586,7 +516,7 @@ namespace Worker_JobTracker
                     }
                     Console.WriteLine("Thread checkJobTrackerLife running");
                 }
-                else if (this.freeze == false && this.W == false && this.JT == true)//JB node
+                else if (this.freeze == false && this.W == false && this.JT == true)//JT node
                 {
                     int total_workers_time = 0;
                     int total_completed_tasks = 0;
@@ -594,45 +524,57 @@ namespace Worker_JobTracker
                     //asks for a state message to every workers
                     foreach (Worker w in this.workers_list)
                     {
-                        //pode ser PassedBrReferende e não ByValue
-                        service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), w.address);
-                        WorkerState stateWorker = service.askNodeInfoService();
 
-                        SubJobW subjob = this.subJobW_list.Find(x => x.workerId == w.id);
 
-                        //Worker que não responde!
-                        if (stateWorker == null)
+                        if (subJobW_list.Count > 0)
                         {
-                            this.workers_list.RemoveAll(x => x.id == w.id);//apaga worker da sua lista de Workers
-
-                            if (w.replica == true && workers_list.Count > 0)//O worker que nao respondeu era o seu replica. Necessário promover um worker a replica
+                            //Pede estado do worker ao worker
+                            service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), w.address);
+                            stateWorker = service.askNodeInfoService();
+                            Console.WriteLine(String.Concat(w.id," is ready? "));
+                            if (stateWorker.ready == true)
                             {
-                                WorkerInterfaceRef promotionService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), workers_list[0].address);
-                                promotionService.promoteToReplicaService();
+                                Console.WriteLine(" YES");    
+                            }else{
+                                Console.WriteLine(" NO");
                             }
-                            else if (w.replica == false)//O worker que nao responde não era replica. Necessário informar a replica da ausencia deste Worker
+
+                            SubJobW subjob = this.subJobW_list.Find(x => x.workerId == w.id);
+
+                            //Worker que não responde!
+                            if (stateWorker == null)
                             {
-                                foreach (Worker existingW in this.workers_list)//procura pela replica
+                                this.workers_list.RemoveAll(x => x.id == w.id);//apaga worker da sua lista de Workers
+
+                                if (w.replica == true && workers_list.Count > 0)//O worker que nao respondeu era o seu replica. Necessário promover um worker a replica
                                 {
-                                    if (existingW.replica == true)
+                                    promotionService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), workers_list[0].address);
+                                    promotionService.promoteToReplicaService();
+                                }
+                                else if (w.replica == false)//O worker que nao responde não era replica. Necessário informar a replica da ausencia deste Worker
+                                {
+                                    foreach (Worker existingW in this.workers_list)//procura pela replica
                                     {
-                                        WorkerServicesRef WorkerService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingW.address);
-                                        WorkerService.removeWorkerService(existingW.id);
+                                        if (existingW.replica == true)
+                                        {
+                                            WorkerService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingW.address);
+                                            WorkerService.removeWorkerService(existingW.id);
+                                        }
                                     }
+
                                 }
 
                             }
+                            else//Se o worker responde vamos verificar o seu desempenho
+                            {
+                                int tasks_exected = subjob.initial_task_nbr - stateWorker.tasks_remaining;//calcula numero de tarefas executadas até agora
+                                int elapsed_time = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds - this.subJobW.starting_unixTimeStamp;//calcula o tempo que decorreu entre
+                                w.timePerTask = elapsed_time / tasks_exected;
+                                total_workers_time += elapsed_time;
+                                total_completed_tasks += tasks_exected;
+                            }
 
                         }
-                        else//Se o worker responde vamos verificar o seu desempenho
-                        {
-                            int tasks_exected = subjob.initial_task_nbr - stateWorker.tasks_remaining;//calcula numero de tarefas executadas até agora
-                            int elapsed_time = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds - this.subJobW.starting_unixTimeStamp;//calcula o tempo que decorreu entre
-                            w.timePerTask = elapsed_time / tasks_exected;
-                            total_workers_time += elapsed_time;
-                            total_completed_tasks += tasks_exected;
-                        }
-
                     }
 
                     if (total_completed_tasks > 0)
@@ -643,11 +585,12 @@ namespace Worker_JobTracker
                     {
                         average_time_to_complete_task = 9999999999;
                     }
-                    
+
                     foreach (Worker w in this.workers_list)
                     {
                         //verifica se o worker demora pelo menos o dobro do tempo que a média dos workers.
-                        if( (2 * average_time_to_complete_task)  < w.timePerTask ){
+                        if ((2 * average_time_to_complete_task) < w.timePerTask)
+                        {
 
                             foreach (Worker freeWorker in this.workers_list)
                             {
@@ -658,13 +601,17 @@ namespace Worker_JobTracker
                                 }
                             }
                         }
-                           
+
                     }
-
-
                     Console.WriteLine("Thread checkWorkerLife running");
-                }//if end
-                System.Threading.Thread.Sleep(5000);//espera 5seg
+                }
+                else
+                {
+                    Console.WriteLine("Thread checkWorkerLife running");
+                    Console.WriteLine("Empty Thread running");
+                }
+                //if end
+            System.Threading.Thread.Sleep(5000);//espera 5seg
             }
         }
 
@@ -689,6 +636,16 @@ namespace Worker_JobTracker
 
         }
 
+        //Executa um conunto de tasks
+        public void executeSubJobThread(object arg)
+        {
+            this.ready = false;
+            foreach (int taskId in this.subJobW.taskList)
+            {
+                execute_task(taskId, subJobW.clientAddress, subJobW.text_file);
+            }
+            this.ready = true;
+        }
 
         /**************************
          * MAIN
@@ -703,10 +660,18 @@ namespace Worker_JobTracker
             JT1.init();
             
             System.Console.ReadLine();
+            
             Program W1 = new Program(2, pupperMasterURL, serviceURL, JT1.address);
             W1.init();
             Console.WriteLine("main: W1 as started");
             Console.WriteLine(W1.assignedJobTracker.address);
+            
+            System.Console.ReadLine();
+
+            Program W2 = new Program(3, pupperMasterURL, serviceURL, JT1.address);
+            W1.init();
+            Console.WriteLine("main: W2 as started");
+            Console.WriteLine(W2.assignedJobTracker.address);
             System.Console.ReadLine();
         }
     }
@@ -874,8 +839,7 @@ namespace Worker_JobTracker
         public void attributeTaskService(SubJobW subjobw)
         {
             p.subJobW = subjobw;
-            p.executeSubJob();
-
+            ThreadPool.QueueUserWorkItem(new WaitCallback(p.executeSubJobThread), new object());
         }
 
         //permite conhecer o informação sobre o Worker e permite saber se este está vivo
@@ -965,7 +929,7 @@ namespace Worker_JobTracker
                         if (workerInList.replica == true)
                         {
                             WorkerServicesRef workerReplicaService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), p.assignedJobTracker.address);
-                            workerReplicaService.addWorkerService(workerInList.toString());
+                            workerReplicaService.addWorkerService(workerInList);
                         }
                     }
                 }
@@ -977,94 +941,150 @@ namespace Worker_JobTracker
         /***********************
          * MARSHALL BY VALUE
          * ************************/
+  
+
+
         //permite que um JT obtenha a lista de JT existentes
-        public String getJTlistService()
+        public List<JobTracker> getJTlistService()
         {
-            String jt_list_string = "";
-            int counter = 1;
-            foreach (JobTracker jt in p.jobtracker_list)
-            {
-
-                if (counter == p.jobtracker_list.Count)
-                {
-                    jt_list_string = "" + jt_list_string + jt.toString();
-                }
-                else
-                {
-                    jt_list_string = "" + jt_list_string + jt.toString() + "|";
-                }
-                counter++;
-            }
-            return jt_list_string;
+            return p.jobtracker_list;
         }
- 
+
         //permite obter a lista de W
-        public String getWlistService()
+        public List<Worker> getWlistService()
         {
-            String w_list_string = "";
-            int counter = 1;
-            foreach (Worker w in p.workers_list)
-            {
-                if (counter == p.jobtracker_list.Count)
-                {
-                    w_list_string = "" + w_list_string + w.toString();
-                }
-                else
-                {
-                    w_list_string = "" + w_list_string + w.toString() + "|";
-                }
-                counter++;
-            }
-            return w_list_string;
+            return p.workers_list;
         }
- 
-        //permite que seja adicionao um novo JT á lista
-        public void addJTService(String jt)
-        {
 
-            p.jobtracker_list.Add(new JobTracker(jt));
+        //permite que seja adicionao um novo JT á lista
+        public void addJTService(JobTracker jt)
+        {
+            p.jobtracker_list.Add(jt);
         }
- 
+
         //Remove JobTracker à sua lista
         public void removeJTService(int id)
         {
             p.jobtracker_list.RemoveAll(x => x.id == id);
         }
- 
- 
+
+
         //Remove worker da sua lista
         public void removeWorkerService(int id)
         {
             p.workers_list.RemoveAll(x => x.id == id);
         }
- 
-        //Adiciona worker à sua lista
-        public void addWorkerService(String wString)
-        {
-            p.workers_list.Add(new Worker(wString));
-        }
- 
-        //permite conhecer o informação sobre o Worker e permite saber se este está vivo
-        public void addSubJobList(String subjobListString)
-        {
 
-            string[] subJobStringList = subjobListString.Split(new string[] { "|" }, StringSplitOptions.None);
-            foreach (String subJobString in subJobStringList)
-            {
-                if (subJobString != "")
-                {
-                    p.subJobW_list.Add(new SubJobW(subJobString));
-                }
-                
-            }
-            
-        }
- 
-        //actualiza o jobTracker
-        public void updateJobTracker(String jtString)
+        //Adiciona worker à sua lista
+        public void addWorkerService(Worker w)
         {
-            p.assignedJobTracker = new JobTracker(jtString);
+            p.workers_list.Add(w);
         }
+
+        //permite conhecer o informação sobre o Worker e permite saber se este está vivo
+        public void addSubJobList(List<SubJobW> subjobList)
+        {
+            p.subJobW_list = subjobList;
+        }
+
+        //actualiza o jobTracker
+        public void updateJobTracker(JobTracker jt)
+        {
+            p.assignedJobTracker = jt;
+        }
+
+
+
+//              //permite que um JT obtenha a lista de JT existentes
+//        public String getJTlistService()
+//        {
+//            String jt_list_string = "";
+//            int counter = 1;
+//            foreach (JobTracker jt in p.jobtracker_list)
+//            {
+//
+//                if (counter == p.jobtracker_list.Count)
+//                {
+//                    jt_list_string = "" + jt_list_string + jt.toString();
+//                }
+//                else
+//                {
+//                    jt_list_string = "" + jt_list_string + jt.toString() + "|";
+//                }
+//                counter++;
+//            }
+//            return jt_list_string;
+//        }
+// 
+//
+ //       public String getWlistService()
+ //       {
+ //           String w_list_string = "";
+ //           int counter = 1;
+ //           foreach (Worker w in p.workers_list)
+ //           {
+ //               if (counter == p.jobtracker_list.Count)
+ //               {
+ //                   w_list_string = "" + w_list_string + w.toString();
+ //               }
+ //               else
+ //               {
+ //                   w_list_string = "" + w_list_string + w.toString() + "|";
+ //               }
+ //               counter++;
+ //           }
+ //           return w_list_string;
+ //       }
+ //
+ //       //permite que seja adicionao um novo JT á lista
+ //       public void addJTService(String jt)
+ //       {
+ //
+ //           p.jobtracker_list.Add(new JobTracker(jt));
+ //       }
+ //
+ //       //Remove JobTracker à sua lista
+ //       public void removeJTService(int id)
+ //       {
+ //           p.jobtracker_list.RemoveAll(x => x.id == id);
+ //       }
+ //
+ //
+ //       //Remove worker da sua lista
+ //       public void removeWorkerService(int id)
+ //       {
+ //           p.workers_list.RemoveAll(x => x.id == id);
+ //       }
+ //
+ //       //Adiciona worker à sua lista
+ //       public void addWorkerService(String wString)
+ //       {
+ //           p.workers_list.Add(new Worker(wString));
+ //       }
+ //
+ //       //permite conhecer o informação sobre o Worker e permite saber se este está vivo
+ //       public void addSubJobList(String subjobListString)
+ //       {
+ //
+ //           string[] subJobStringList = subjobListString.Split(new string[] { "|" }, StringSplitOptions.None);
+ //           foreach (String subJobString in subJobStringList)
+ //           {
+ //               if (subJobString != "")
+ //               {
+ //                   p.subJobW_list.Add(new SubJobW(subJobString));
+ //               }
+ //               
+ //           }
+ //           
+ //       }
+ //
+ //       //actualiza o jobTracker
+ //       public void updateJobTracker(String jtString)
+ //       {
+ //           p.assignedJobTracker = new JobTracker(jtString);
+ //       }
+
+
 
     }
 }
