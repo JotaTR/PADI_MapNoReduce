@@ -352,7 +352,7 @@ namespace PADI_MapNoReduce
     {
         SharedClass provideTask(int taskId, String text_file);
 
-        void deliverTask(IList<KeyValuePair<string, string>> result, String output);
+        void deliverTask(IList<KeyValuePair<string, string>> result, int i);
 
     }
 
