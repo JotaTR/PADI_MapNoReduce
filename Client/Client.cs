@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 
 
-namespace PADI_MapNoReduce
+namespace Cliente
 {
     public class Program
     {
@@ -69,6 +69,7 @@ namespace PADI_MapNoReduce
             String workerURL;
             int currentsplit;
             int splitsReceived;
+            List<int> splitslist;
 
             public static Program p;
             public Cliente(int id, string entryURL)
@@ -94,9 +95,16 @@ namespace PADI_MapNoReduce
 
                 char[] characterSpliters = { '\n', '\r' };
                 _textSplit = txt.Split(characterSpliters);
+                int count = 0;
+                using (var sr = new StreamReader(inputPath))
+                {
+                    while (sr.Read() != -1)
+                        count++;
+                }
+               
 
                 
-                List<int> splitslist = new List<int>();
+                splitslist = new List<int>();
                 for (int i = 0; i < splits; i++)
                  
                 {
@@ -104,7 +112,7 @@ namespace PADI_MapNoReduce
                 }
 
                 int j = 0;
-                for (int i = 0; i < nchars; i++)
+                for (int i = 0; i < count; i++)
                 {
                     splitslist[j]++;
                     if (j == (splits - 1))
@@ -117,19 +125,13 @@ namespace PADI_MapNoReduce
                     }
                 }
 
-            
-    
-
-                int nlinesPerSplit = splitslist / _textSplit.Length;
-                int res = _textSplit.Length * nlinesPerSplit;
-
                 // Send job to workers?
                 WorkerInterfaceRef mt = (WorkerInterfaceRef)Activator.GetObject(
                 typeof(WorkerInterfaceRef),
                 workerURL);
                 byte[] code = System.IO.File.ReadAllBytes(dllPath);
                 String resposta = "";
-                resposta = mt.submitJobService(splitslist, "tcp://localhost:" + (10000 + idCliente) + "/C", txt);
+                resposta = mt.submitJobService(splits, "tcp://localhost:" + (10000 + idCliente) + "/C", txt);
                 while(resposta != "ok")
                 {
                      mt = (WorkerInterfaceRef)Activator.GetObject(
@@ -146,7 +148,21 @@ namespace PADI_MapNoReduce
             result.code = code;
             result.split = split;
             result.className = className;
+            int i;
+            int startingCharPos = 0;
+            int endingCharPos;
             string txt = System.IO.File.ReadAllText(_inputFilePath);
+            for(i = 0; i < taskId - 1; i++)
+            {
+                startingCharPos += splitslist[i];
+            }
+
+            endingCharPos = startingCharPos + splitslist[taskId - 1] - 1;
+
+            for (i = startingCharPos; i <= endingCharPos; i++)
+            {
+
+            }
 
             char[] characterSpliters = { '\n', '\r' };
             _textSplit = txt.Split(characterSpliters);

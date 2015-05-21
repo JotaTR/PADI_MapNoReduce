@@ -342,13 +342,11 @@ namespace PADI_MapNoReduce
         IList<KeyValuePair<string, string>> Map(string fileLine);
     }
 
-    public interface IMapperTransfer {
-        void SendMapperService(SharedClass taskClass);
-    }
+    
 
 
     //Client Interface
-    public interface ClientInterface : IMapperTransfer
+    public interface ClientInterface 
     {
         SharedClass provideTask(int taskId, String text_file);
 
