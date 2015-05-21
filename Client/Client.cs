@@ -55,7 +55,7 @@ namespace PADI_MapNoReduce
     }
 
 
-        class Cliente : MarshalByRefObject
+        class Cliente : MarshalByRefObject, ClientInterface
         {
             private bool isWaitingResult = false;
             private string _inputFilePath;
@@ -67,6 +67,7 @@ namespace PADI_MapNoReduce
             private string[] _textSplit;
             int idCliente;
             String workerURL;
+            int currentsplit;
 
 
             public Cliente(int id, string entryURL)
@@ -80,6 +81,7 @@ namespace PADI_MapNoReduce
                 while (isWaitingResult)
                 { }
                 isWaitingResult = true;
+                currentsplit = 1;
                 //_inputFilePath = inputPath;
                 //_nSplits = splits;
                 _outputPath = outputPath;
@@ -111,10 +113,50 @@ namespace PADI_MapNoReduce
               
             }
 
+        public SharedClass provideTask(int taskId, byte[] code, String split, String className, String text_file)
+        {
+            SharedClass result;
+            result.code = code;
+            result.split = split;
+            result.className = className;
+            string txt = System.IO.File.ReadAllText(_inputFilePath);
+
+            char[] characterSpliters = { '\n', '\r' };
+            _textSplit = txt.Split(characterSpliters);
+            int nLines = start - end;
+            string[] result = new string[nLines];
+            for (int i = 0; i < nLines; i++)
+            {
+                result[i] = _textSplit[start + i];
+            }
+            return result;
+        }
+
+        public  void deliverTask( IList<KeyValuePair<string, string>> result, string outputPath)
+        {
+            _result = result;
+            // Send result to output path
+            if (!System.IO.File.Exists(outputPath))
+            {
+                System.IO.Directory.CreateDirectory(outputPath);
+
+            }
+
+            for (int i = currentsplit; i < result.Count; i++)
+            {
+                string filename = "./" + outputPath + "/" + i + ".out";
+                System.IO.File.WriteAllText(filename, result[i].Key + ": " + result[i].Value);
+                currentsplit = i;
+            }
+            if(currentsplit >= _nSplits){
+                isWaitingResult = false;
+            }
+        }
+
         }
 
      //Serviços disponibilizadios Pelo no
-    internal class ClientServices : MarshalByRefObject, ClientInterface
+   /* internal class ClientServices : MarshalByRefObject, ClientInterface
     {
 
         private IList<KeyValuePair<string, string>> _result;
@@ -164,6 +206,6 @@ namespace PADI_MapNoReduce
             }
         }
 
-    }
+    }*/
     
 }
