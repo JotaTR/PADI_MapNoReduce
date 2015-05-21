@@ -70,22 +70,22 @@ namespace PuppetMaster
           // Disables a given worker process's Worker Functions
           case "FREEZEW":
             targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
-            targetPM.FreezeWorker(Int32.Parse(parsedText[1]));
+            targetPM.CallFreeze(Int32.Parse(parsedText[1]), FreezeType.FREEZEW);
             break;
           // (Re)enables a given worker process's Worker Functions
           case "UNFREEZEW":
             targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
-            targetPM.UnfreezeWorker(Int32.Parse(parsedText[1]));
+            targetPM.CallFreeze(Int32.Parse(parsedText[1]), FreezeType.UNFREEZEW);
             break;
           // Disables a given worker process's Job Tracker Functions
           case "FREEZEC":
             targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
-            targetPM.FreezeJobTracker(Int32.Parse(parsedText[1]));
+            targetPM.CallFreeze(Int32.Parse(parsedText[1]), FreezeType.FREEZEC);
             break;
           // (Re)enables a given worker process's Job Tracker Functions
           case "UNFREEZEC":
             targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:20001/PM");
-            targetPM.UnfreezeJobTracker(Int32.Parse(parsedText[1]));
+            targetPM.CallFreeze(Int32.Parse(parsedText[1]), FreezeType.UNFREEZEC);
             break;
           default:
             System.Windows.Forms.MessageBox.Show("Please input a correct Command");

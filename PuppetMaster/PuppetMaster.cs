@@ -9,7 +9,7 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Reflection;
-
+using System.Threading;
 
 using Worker_JobTracker;
 using PADI_MapNoReduce;
@@ -18,14 +18,45 @@ using PADI_MapNoReduce;
 
 namespace PuppetMaster
 {
+  class WorkerArguments
+  {
+    public int id;
+    public string pmURL;
+    public string workerURL;
+    public string entryURL;
+
+    public WorkerArguments (int wID, string puppetmasterURL, string wURL, string eURL)
+    {
+      id = wID;
+      pmURL = puppetmasterURL;
+      workerURL = wURL;
+      entryURL = eURL;
+    }
+  }
+  class DelayArguments
+  {
+    public int time;
+    public Thread wt;
+
+    public DelayArguments(int t, Thread worker)
+    {
+      time = t;
+      wt = worker;
+    }
+  }
+
+  public enum FreezeType {FREEZEW, UNFREEZEW, FREEZEC, UNFREEZEC};
   class PuppetMaster : MarshalByRefObject
   {
     // int: Worker ID
     // Object: Worker instance
-    private Dictionary<int, Program> workerList = new Dictionary<int, Program>();
-    private int currentWorkerID = 0;
+    private Dictionary<int, Worker_JobTracker.Program> workerList = new Dictionary<int, Worker_JobTracker.Program>();
+    private Dictionary<int, Thread> workerThreadList = new Dictionary<int, Thread>();
     private int _ID;
     private int _numberPM = 0;
+
+    private PADI_MapNoReduce.Program _userApp;
+    private PADI_MapNoReduce.Cliente client;
 
     public int ID
     {
@@ -37,6 +68,12 @@ namespace PuppetMaster
     {
       get { return _numberPM; }
       set { _numberPM = value; }
+    }
+
+    public PADI_MapNoReduce.Program userApp
+    {
+      get { return _userApp; }
+      set { _userApp = value; }
     }
 
     // Functions
@@ -52,47 +89,25 @@ namespace PuppetMaster
       System.Windows.Forms.MessageBox.Show("Entry URL: " + entryURL + " Input Path: " + inputPath + " Output Path: " + outputPath +
                                             " Number of Splits: " + nSplits + " Map Class Name: " + mapClassName + " Map Class Path: " + mapClassPath);
 
-
-      Worker worker = (Worker)Activator.GetObject(typeof(Worker), entryURL);
-      string txt = System.IO.File.ReadAllText(inputPath);
+      client = userApp.Init(this.ID - 30000, entryURL);
+      
       byte[] code = System.IO.File.ReadAllBytes(mapClassPath);
 
       object ClassObj = null;
-
       Assembly assembly = Assembly.Load(code);
       // Walk through each type in the assembly looking for our class
-      foreach (Type type in assembly.GetTypes())
-      {
-        if (type.IsClass == true)
-        {
-          if (type.FullName.EndsWith("." + mapClassName))
-          {
+      foreach (Type type in assembly.GetTypes()) {
+        if (type.IsClass == true) {
+          if (type.FullName.EndsWith("." + mapClassName)) {
             // create an instance of the object
             ClassObj = Activator.CreateInstance(type);
-
-
-                        // Dynamically Invoke the method
-                        /*object[] args = new object[] { txt };
-                        object resultObject = type.InvokeMember("Map",
-                          BindingFlags.Default | BindingFlags.InvokeMethod,
-                               null,
-                               ClassObj,
-                               args);
-                        IList<KeyValuePair<string, string>> result = (IList<KeyValuePair<string, string>>) resultObject;
-                        Console.WriteLine("Map call result was: ");
-                        foreach (KeyValuePair<string, string> p in result) {
-                            Console.WriteLine("key: " + p.Key + ", value: " + p.Value);
-                        }*/
-
           }
         }
       }
 
-      if (ClassObj == null)
-      {
-        // Throw Exception
-      }
+      IMapper mapper = (IMapper) ClassObj;
 
+      client.submit(inputPath, nSplits, outputPath, mapper, mapClassPath);
     }
 
     // CreateWorker: 
@@ -108,23 +123,39 @@ namespace PuppetMaster
       // Show Message for testing - remove later
       System.Windows.Forms.MessageBox.Show("ID: " + id + " Port: " + workerPort);
 
-      // Create new worker instance and store it in array/dictionary
-      if (id <= 0 && !workerList.ContainsKey(currentWorkerID))
+      PuppetMaster[] pmA = GetPuppetMasters();
+      bool noWorkerWithID = true;
+
+      foreach (PuppetMaster pm in pmA)
       {
-        Program w = new Program(currentWorkerID, "tcp://localhost:"+ID+"/PM", workerURL, entryURL);
-        workerList.Add(currentWorkerID, w);
-        currentWorkerID++;
+        if (pm.hasWorkerID(id))
+        {
+          noWorkerWithID = false;
+        }
       }
-      else if (!workerList.ContainsKey(id))
+
+      if (noWorkerWithID)
       {
-        Program w = new Program(id, "tcp://localhost:" + ID + "/PM", workerURL, entryURL);
-        workerList.Add(id, w);
-        currentWorkerID = id;
+        Thread worker = new Thread(new ParameterizedThreadStart(this.newWorker));
+        worker.Start(new WorkerArguments(id, "tcp://localhost:" + ID + "/PM", workerURL, entryURL));
+        workerThreadList.Add(id, worker);
       }
       else
       {
-        // THROW ERROR/EXCEPTION
+        System.Windows.Forms.MessageBox.Show("ID: " + id + " already exists");
       }
+    }
+
+    public void newWorker(object arg)
+    {
+      WorkerArguments wa = (WorkerArguments)arg;
+      Worker_JobTracker.Program w = new Worker_JobTracker.Program(wa.id, wa.pmURL, wa.workerURL, wa.entryURL);
+      workerList.Add(wa.id, w);
+    }
+
+    public bool hasWorkerID(int id)
+    {
+      return workerList.ContainsKey(id);
     }
 
     // Wait: 
@@ -158,74 +189,190 @@ namespace PuppetMaster
 
     public string Report()
     {
+      string result = "Puppet Master " + ID + " :" + '\n';
+      foreach (KeyValuePair<int, Worker_JobTracker.Program> worker in this.workerList)
+      {
+        result += " Worker " + worker.Key + " : ";
+        WorkerInterfaceRef service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), worker.Value._address);
+        WorkerState state = service.askNodeInfoService();
+        result += "-Ready: " + state.ready.ToString() + " -Frozen: " + state.freeze.ToString() + " -Number of Tasks Remaining: " + state.tasks_remaining + '\n';
+      }
       // Add status requests to worker nodes
-      return (ID + ": Nothing to Report");
+      return result;
     }
 
     // SlowWorker:
     // Delays (puts to sleep) a worker process
     public void SlowWorker(int workerID, int ms)
     {
-      Program w;
-      if (workerList.TryGetValue(workerID, out w))
+      Worker_JobTracker.Program w;
+      Thread wt;
+      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
       {
-
+        Thread temp = new Thread(new ParameterizedThreadStart(this.DelayWorker));
+        temp.Start(new DelayArguments(ms, wt));
       }
+    }
+
+    public void DelayWorker(object t)
+    {
+      DelayArguments args = (DelayArguments)t;
+      args.wt.Suspend();
+      Thread.Sleep(args.time);
+      args.wt.Resume();
     }
 
     // FreezeWorker:
     // Disables a given worker process's Worker Functions
-    public void FreezeWorker(int workerID)
+    public bool FreezeWorker(int workerID)
     {
-      Program w;
-      if(workerList.TryGetValue(workerID, out w))
+      Worker_JobTracker.Program w;
+      Thread wt;
+      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
       {
         if (w._W)
         {
           w._freeze = true;
+          wt.Suspend();
         }
+        return true;
       }
+      return false;
     }
 
     // UnfreezeWorker:
     // Re-enables a given worker process's Worker Functions
-    public void UnfreezeWorker(int workerID)
+    public bool UnfreezeWorker(int workerID)
     {
-      Program w;
-      if (workerList.TryGetValue(workerID, out w))
+      Worker_JobTracker.Program w;
+      Thread wt;
+      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
       {
+        wt.Resume();
         if (w._W && w._freeze)
         {
+          wt.Resume();
           w._freeze = false;
         }
+        else
+        {
+          wt.Suspend();
+        }
+        return true;
       }
+      return false;
     }
 
     // FreezeJobTracker:
     // Disables a given worker process's JobTracker Functions
-    public void FreezeJobTracker(int workerID)
+    public bool FreezeJobTracker(int workerID)
     {
-      Program w;
-      if (workerList.TryGetValue(workerID, out w))
+      Worker_JobTracker.Program w;
+      Thread wt;
+      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
       {
         if (w._JT)
         {
           w._freeze = true;
+          wt.Suspend();
         }
+        return true;
       }
+      return false;
     }
 
     // UnfreezeJobTracker:
     // Re-enables a given worker process's JobTracker Functions
-    public void UnfreezeJobTracker(int workerID)
+    public bool UnfreezeJobTracker(int workerID)
     {
-      Program w;
-      if (workerList.TryGetValue(workerID, out w))
+      Worker_JobTracker.Program w;
+      Thread wt;
+      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
       {
+        wt.Resume();
         if (w._JT && w._freeze)
         {
+          wt.Resume();
           w._freeze = false;
         }
+        else
+        {
+          wt.Suspend();
+        }
+        return true;
+      }
+      return false;
+    }
+
+    public void CallFreeze(int workerID, FreezeType fType)
+    {
+      PuppetMaster[] pmArray = GetPuppetMasters();
+      switch (fType)
+      {
+        case FreezeType.FREEZEC:
+          foreach (PuppetMaster pm in pmArray)
+          {
+            if (pm.FreezeJobTracker(workerID))
+            {
+              return;
+            }
+          }
+          break;
+        case FreezeType.FREEZEW:
+          foreach (PuppetMaster pm in pmArray)
+          {
+            if (pm.FreezeWorker(workerID))
+            {
+              return;
+            }
+          }
+          break;
+        case FreezeType.UNFREEZEC:
+          foreach (PuppetMaster pm in pmArray)
+          {
+            if (pm.UnfreezeJobTracker(workerID))
+            {
+              return;
+            }
+          }
+          break;
+        case FreezeType.UNFREEZEW:
+          foreach (PuppetMaster pm in pmArray)
+          {
+            if (pm.UnfreezeWorker(workerID))
+            {
+              return;
+            }
+          }
+          break;
+      }
+    }
+
+    public PuppetMaster[] GetPuppetMasters()
+    {
+      PuppetMaster[] pms;
+      if (numberPM < 2)
+      {
+        pms = new PuppetMaster[1];
+        pms[0] = this;
+        return pms;
+      }
+      else
+      {
+        pms = new PuppetMaster[numberPM];
+        for (int i = 0; i < numberPM; i++)
+        {
+          int portN = 20001 + i;
+          if (portN != ID)
+          {
+            pms[i] = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), "tcp://localhost:" + portN + "/PM");
+          }
+          else
+          {
+            pms[i] = this;
+          }
+        }
+        return pms;
       }
     }
 
@@ -250,6 +397,8 @@ namespace PuppetMaster
               "PM",
               WellKnownObjectMode.Singleton
           );*/
+
+      pm.userApp = new PADI_MapNoReduce.Program();
 
       Application.EnableVisualStyles();
       Application.SetCompatibleTextRenderingDefault(false);
