@@ -70,6 +70,9 @@ namespace Cliente
             int currentsplit;
             int splitsReceived;
             List<int> splitslist;
+            byte[] code;
+            String className;
+
 
             public static Program p;
             public Cliente(int id, string entryURL)
@@ -78,13 +81,13 @@ namespace Cliente
                 workerURL = entryURL;
             }
 
-            public void submit(string inputPath, int splits, string outputPath, IMapper mapper, string dllPath)
+            public void submit(string inputPath, int splits, string outputPath, byte[] code, string className)
             {
                 while (isWaitingResult)
                 { }
                 isWaitingResult = true;
                 currentsplit = 1;
-                //_inputFilePath = inputPath;
+                _inputFilePath = inputPath;
                 //_nSplits = splits;
                 _outputPath = outputPath;
                 //_mapImplementName = mapper;
@@ -129,7 +132,8 @@ namespace Cliente
                 WorkerInterfaceRef mt = (WorkerInterfaceRef)Activator.GetObject(
                 typeof(WorkerInterfaceRef),
                 workerURL);
-                byte[] code = System.IO.File.ReadAllBytes(dllPath);
+                this.code = code;
+                this.className = className;
                 String resposta = "";
                 resposta = mt.submitJobService(splits, "tcp://localhost:" + (10000 + idCliente) + "/C", txt);
                 while(resposta != "ok")
@@ -144,10 +148,7 @@ namespace Cliente
         public SharedClass provideTask(int taskId, String text_file)
         {
             
-            SharedClass result;
-            result.code = code;
-            result.split = split;
-            result.className = className;
+            
             int i;
             int startingCharPos = 0;
             int endingCharPos;
@@ -159,19 +160,15 @@ namespace Cliente
 
             endingCharPos = startingCharPos + splitslist[taskId - 1] - 1;
 
+            String split = "";
+            //string content = Convert.ToBase64String(File.ReadAllBytes(txt));
+
             for (i = startingCharPos; i <= endingCharPos; i++)
             {
-
+                split = split + txt[i];
             }
 
-            char[] characterSpliters = { '\n', '\r' };
-            _textSplit = txt.Split(characterSpliters);
-            int nLines = start - end;
-            string[] result = new string[nLines];
-            for (int i = 0; i < nLines; i++)
-            {
-                result[i] = _textSplit[start + i];
-            }
+            SharedClass result = new SharedClass( this.code, split, this.className);
             return result;
         }
 
