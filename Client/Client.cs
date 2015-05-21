@@ -7,7 +7,10 @@ using System.IO;
 using PADI_MapNoReduce;
 using System.Collections.Generic;
 
-
+using System.Collections;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Cliente
 {
@@ -17,10 +20,14 @@ namespace Cliente
         public Cliente Init(int clientID, String EntryURL)
         {
             Cliente c = new Cliente(clientID, EntryURL);
+            BinaryServerFormatterSinkProvider serverProvRef = new BinaryServerFormatterSinkProvider();
+            IDictionary propBagRef = new Hashtable();
+            propBagRef["port"] = 10000 + clientID;
+            propBagRef["typeFilterLevel"] = TypeFilterLevel.Full;
+            propBagRef["name"] = String.Concat("UniqueChannelName", clientID);
 
-            TcpChannel channel = new TcpChannel(10000 + clientID);
-
-            ChannelServices.RegisterChannel(channel, false);
+            TcpChannel channelRegisterRef = new TcpChannel(propBagRef, null, serverProvRef);
+            ChannelServices.RegisterChannel(channelRegisterRef, false);
 
             RemotingServices.Marshal(c, "C", typeof(Cliente));
 
@@ -69,7 +76,7 @@ namespace Cliente
             String workerURL;
             int currentsplit;
             int splitsReceived;
-            List<int> splitslist;
+            int[] splitslist;
             byte[] code;
             String className;
 
@@ -107,7 +114,7 @@ namespace Cliente
                
 
                 
-                splitslist = new List<int>();
+                splitslist = new int[splits];
                 for (int i = 0; i < splits; i++)
                  
                 {

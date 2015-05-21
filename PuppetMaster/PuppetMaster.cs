@@ -13,6 +13,7 @@ using System.Threading;
 
 using Worker_JobTracker;
 using PADI_MapNoReduce;
+using Cliente;
 
 /// PUPPETMASTER: Rui
 
@@ -55,8 +56,8 @@ namespace PuppetMaster
     private int _ID;
     private int _numberPM = 0;
 
-    private PADI_MapNoReduce.Program _userApp;
-    private PADI_MapNoReduce.Cliente client;
+    private Cliente.Program _userApp;
+    private Cliente.Cliente client;
 
     public int ID
     {
@@ -70,7 +71,7 @@ namespace PuppetMaster
       set { _numberPM = value; }
     }
 
-    public PADI_MapNoReduce.Program userApp
+    public Cliente.Program userApp
     {
       get { return _userApp; }
       set { _userApp = value; }
@@ -85,15 +86,11 @@ namespace PuppetMaster
                           string mapClassName, string mapClassPath
       ) 
     {
-      // Show Message for testing - remove later
-      System.Windows.Forms.MessageBox.Show("Entry URL: " + entryURL + " Input Path: " + inputPath + " Output Path: " + outputPath +
-                                            " Number of Splits: " + nSplits + " Map Class Name: " + mapClassName + " Map Class Path: " + mapClassPath);
-
       client = userApp.Init(this.ID - 30000, entryURL);
       
       byte[] code = System.IO.File.ReadAllBytes(mapClassPath);
 
-      object ClassObj = null;
+      /*object ClassObj = null;
       Assembly assembly = Assembly.Load(code);
       // Walk through each type in the assembly looking for our class
       foreach (Type type in assembly.GetTypes()) {
@@ -105,9 +102,9 @@ namespace PuppetMaster
         }
       }
 
-      IMapper mapper = (IMapper) ClassObj;
+      IMapper mapper = (IMapper) ClassObj;*/
 
-      client.submit(inputPath, nSplits, outputPath, mapper, mapClassPath);
+      client.submit(inputPath, nSplits, outputPath, code, mapClassName);
     }
 
     // CreateWorker: 
@@ -119,9 +116,6 @@ namespace PuppetMaster
       char[] urlDelimiterChars = {':' , '/'};
       string[] parsedURL = workerURL.Split(urlDelimiterChars);
       int workerPort = Int32.Parse(parsedURL[4]);
-
-      // Show Message for testing - remove later
-      System.Windows.Forms.MessageBox.Show("ID: " + id + " Port: " + workerPort);
 
       PuppetMaster[] pmA = GetPuppetMasters();
       bool noWorkerWithID = true;
@@ -138,6 +132,7 @@ namespace PuppetMaster
       {
         Thread worker = new Thread(new ParameterizedThreadStart(this.newWorker));
         worker.Start(new WorkerArguments(id, "tcp://localhost:" + ID + "/PM", workerURL, entryURL));
+        Thread.Sleep(10);
         workerThreadList.Add(id, worker);
       }
       else
@@ -251,7 +246,6 @@ namespace PuppetMaster
         wt.Resume();
         if (w._W && w._freeze)
         {
-          wt.Resume();
           w._freeze = false;
         }
         else
@@ -292,7 +286,6 @@ namespace PuppetMaster
         wt.Resume();
         if (w._JT && w._freeze)
         {
-          wt.Resume();
           w._freeze = false;
         }
         else
@@ -379,7 +372,7 @@ namespace PuppetMaster
     /// <summary>
     /// The main entry point for the application.
     /// </summary>
-    //[STAThread]
+    [STAThread]
     static void Main(string[] args)
     {
       PuppetMaster pm = new PuppetMaster();
@@ -398,7 +391,7 @@ namespace PuppetMaster
               WellKnownObjectMode.Singleton
           );*/
 
-      pm.userApp = new PADI_MapNoReduce.Program();
+      pm.userApp = new Cliente.Program();
 
       Application.EnableVisualStyles();
       Application.SetCompatibleTextRenderingDefault(false);
