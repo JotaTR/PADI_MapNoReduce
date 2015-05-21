@@ -76,7 +76,7 @@ namespace Cliente
             String workerURL;
             int currentsplit;
             int splitsReceived;
-            int[] splitslist;
+            List<int> splitslist;
             byte[] code;
             String className;
 
@@ -111,10 +111,10 @@ namespace Cliente
                     while (sr.Read() != -1)
                         count++;
                 }
-               
 
-                
-                splitslist = new int[splits];
+
+
+                splitslist = new List<int>(splits);
                 for (int i = 0; i < splits; i++)
                  
                 {

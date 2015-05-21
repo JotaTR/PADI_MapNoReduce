@@ -430,54 +430,24 @@ namespace Worker_JobTracker
         {
 
             List<int> splits = new List<int>();
-
-            float nodesPerSplit = (float)nbr_splits / (float)nbr_nodes;
-            int nodesPerSplitTruncated = (int) Math.Floor(nodesPerSplit);
-            
-            if (nodesPerSplit < 1)
+            for (int i = 0; i < nbr_nodes; i++)
             {
-                System.Console.WriteLine("nodesPerSplit < 1");
-                //Se o numero de Nodes é maior que o numero de splits basta atribuir um split a cada node e alguns ficam a sobrar
-                for (int i = 0; i < nbr_splits; i++)
-                {
-                    splits.Add(1);
-                }
-            }
-            else
-            {
-                System.Console.WriteLine("nodesPerSplit > 1");
-                float accumFloat = 0;
-                int accumInt = 0;
-                int workersWithJob = 0;
-                while (accumFloat < nbr_splits)
-                {
-                   // System.Console.WriteLine(String.Concat("accumFloat -> ", accumFloat));
-                    if ( ((nbr_splits - accumInt) < nodesPerSplitTruncated) || (workersWithJob + 1 == nbr_nodes) )//Ja so falta o ultimo worker e o numero de tasks que sobram e menor do que era suposto
-                    {
-                        splits.Add(nbr_splits - accumInt);
-                        accumInt += nbr_splits - accumInt;
-                        accumFloat += nodesPerSplit;
-                        break;
-                    }
-                    else
-                    {
-                        if( (accumFloat - accumInt) >= 1){ //se a dif entre os acumuladores é superior a um o proximo Worker tem que receber mais um JOB que os outros para equilibrar
-
-                            accumInt += nodesPerSplitTruncated + 1;
-                            splits.Add(nodesPerSplitTruncated + 1);
-                        }
-                        else
-                        {
-                            accumInt += nodesPerSplitTruncated;//soma acumulador real (truncado)
-                            splits.Add(nodesPerSplitTruncated);
-                        }
-                        accumFloat += nodesPerSplit;//somo acumulador ideal (se se podessem dividir tarefas em fracções)                        
-
-                    }
-                    workersWithJob++;
-                }
+                splits[i] = 0;
             }
 
+            int j = 0;
+            for (int i = 0; i < nbr_splits; i++)
+            {
+                splits[j]++;
+                if (j == (nbr_nodes - 1))
+                {
+                    j = 0;
+                }
+                else
+                {
+                    j++;
+                }
+            }
 
             return splits;
 
