@@ -55,7 +55,7 @@ namespace PADI_MapNoReduce
     }
 
 
-        class Cliente : MarshalByRefObject, ClientInterface
+        public class Cliente : MarshalByRefObject, ClientInterface
         {
             private bool isWaitingResult = false;
             private string _inputFilePath;
@@ -69,7 +69,7 @@ namespace PADI_MapNoReduce
             String workerURL;
             int currentsplit;
 
-
+            public static Program p;
             public Cliente(int id, string entryURL)
             {
                 idCliente = id;
@@ -93,6 +93,9 @@ namespace PADI_MapNoReduce
                 char[] characterSpliters = { '\n', '\r' };
                 _textSplit = txt.Split(characterSpliters);
 
+                int nlinesPerSplit = splits / _textSplit.Length;
+                int res = _textSplit.Length * nlinesPerSplit;
+
                 // Send job to workers?
                 WorkerInterfaceRef mt = (WorkerInterfaceRef)Activator.GetObject(
                 typeof(WorkerInterfaceRef),
@@ -100,21 +103,18 @@ namespace PADI_MapNoReduce
                 byte[] code = System.IO.File.ReadAllBytes(dllPath);
                 String resposta = "";
                 resposta = mt.submitJobService(splits, "tcp://localhost:" + (10000 + idCliente) + "/C", txt);
-                if(resposta == "ok")
+                while(resposta != "ok")
                 {
-
-                }
-                else
-                {
-                    mt = (WorkerInterfaceRef)Activator.GetObject(
-                        typeof(WorkerInterfaceRef),
-                        resposta);
+                     mt = (WorkerInterfaceRef)Activator.GetObject(
+                     typeof(WorkerInterfaceRef),
+                     resposta);
                 }
               
             }
 
-        public SharedClass provideTask(int taskId, byte[] code, String split, String className, String text_file)
+        public SharedClass provideTask(int taskId, String text_file)
         {
+            
             SharedClass result;
             result.code = code;
             result.split = split;
@@ -144,7 +144,7 @@ namespace PADI_MapNoReduce
 
             for (int i = currentsplit; i < result.Count; i++)
             {
-                string filename = "./" + outputPath + "/" + i + ".out";
+                string filename = ".\\" + outputPath + "\\" + i + ".out";
                 System.IO.File.WriteAllText(filename, result[i].Key + ": " + result[i].Value);
                 currentsplit = i;
             }
