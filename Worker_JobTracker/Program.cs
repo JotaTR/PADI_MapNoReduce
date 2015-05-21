@@ -431,57 +431,26 @@ namespace Worker_JobTracker
         {
 
             List<int> splits = new List<int>();
-
-            float nodesPerSplit = (float)nbr_splits / (float)nbr_nodes;
-            int nodesPerSplitTruncated = (int) Math.Floor(nodesPerSplit);
-            
-            if (nodesPerSplit < 1)
+            for (int i = 0; i < nbr_nodes; i++)
             {
-                System.Console.WriteLine("nodesPerSplit < 1");
-                //Se o numero de Nodes é maior que o numero de splits basta atribuir um split a cada node e alguns ficam a sobrar
-                for (int i = 0; i < nbr_splits; i++)
-                {
-                    splits.Add(1);
-                }
-            }
-            else
-            {
-                System.Console.WriteLine("nodesPerSplit > 1");
-                float accumFloat = 0;
-                int accumInt = 0;
-                int workersWithJob = 0;
-                while (accumFloat < nbr_splits)
-                {
-                   // System.Console.WriteLine(String.Concat("accumFloat -> ", accumFloat));
-                    if ( ((nbr_splits - accumInt) < nodesPerSplitTruncated) || (workersWithJob + 1 == nbr_nodes) )//Ja so falta o ultimo worker e o numero de tasks que sobram e menor do que era suposto
-                    {
-                        splits.Add(nbr_splits - accumInt);
-                        accumInt += nbr_splits - accumInt;
-                        accumFloat += nodesPerSplit;
-                        break;
-                    }
-                    else
-                    {
-                        if( (accumFloat - accumInt) >= 1){ //se a dif entre os acumuladores é superior a um o proximo Worker tem que receber mais um JOB que os outros para equilibrar
-
-                            accumInt += nodesPerSplitTruncated + 1;
-                            splits.Add(nodesPerSplitTruncated + 1);
-                        }
-                        else
-                        {
-                            accumInt += nodesPerSplitTruncated;//soma acumulador real (truncado)
-                            splits.Add(nodesPerSplitTruncated);
-                        }
-                        accumFloat += nodesPerSplit;//somo acumulador ideal (se se podessem dividir tarefas em fracções)                        
-
-                    }
-                    workersWithJob++;
-                }
+                splits[i] = 0;
             }
 
+            int j = 0;
+            for (int i = 0; i < nbr_splits; i++)
+            {
+                splits[j]++;
+                if (j == (nbr_nodes - 1))
+                {
+                    j = 0;
+                }
+                else
+                {
+                    j++;
+                }
+            }
 
             return splits;
-
         }
 
 
@@ -704,9 +673,39 @@ namespace Worker_JobTracker
             System.Console.ReadLine();
 
             Program W2 = new Program(3, pupperMasterURL, serviceURL, JT1.address);
-            W1.init();
-            Console.WriteLine("main: W2 as started");
+            W2.init();
+            Console.WriteLine("main: W3 as started");
             Console.WriteLine(W2.assignedJobTracker.address);
+            System.Console.ReadLine();
+
+            Program W3 = new Program(4, pupperMasterURL, serviceURL, JT1.address);
+            W3.init();
+            Console.WriteLine("main: W4 as started");
+            Console.WriteLine(W3.assignedJobTracker.address);
+            System.Console.ReadLine();
+
+            Program W4 = new Program(5, pupperMasterURL, serviceURL, JT1.address);
+            W4.init();
+            Console.WriteLine("main: W5 as started");
+            Console.WriteLine(W4.assignedJobTracker.address);
+            System.Console.ReadLine();
+
+            Program W5= new Program(6, pupperMasterURL, serviceURL, JT1.address);
+            W5.init();
+            Console.WriteLine("main: W6 as started");
+            Console.WriteLine(W5.assignedJobTracker.address);
+            System.Console.ReadLine();
+
+            Program W6 = new Program(7, pupperMasterURL, serviceURL, JT1.address);
+            W6.init();
+            Console.WriteLine("main: W7 as started");
+            Console.WriteLine(W6.assignedJobTracker.address);
+            System.Console.ReadLine();
+
+            Program W7 = new Program(8, pupperMasterURL, serviceURL, JT1.address);
+            W7.init();
+            Console.WriteLine("main: W8 as started");
+            Console.WriteLine(W7.assignedJobTracker.address);
             System.Console.ReadLine();
 
             System.Threading.Thread.Sleep(5000);//espera 5seg
