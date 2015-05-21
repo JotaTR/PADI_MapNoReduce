@@ -51,7 +51,7 @@ namespace PuppetMaster
               targetPM = (PuppetMaster)Activator.GetObject(typeof(PuppetMaster), parsedText[2]);
               if (parsedText.Length < 5)
               {
-                targetPM.CreateWorker(parsedText[3], Int32.Parse(parsedText[1]));
+                targetPM.CreateWorker(parsedText[3], Int32.Parse(parsedText[1]), "");
               }
               else
               {
