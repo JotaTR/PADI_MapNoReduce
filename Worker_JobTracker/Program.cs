@@ -660,35 +660,36 @@ namespace Worker_JobTracker
         ***************************/
         static void Main(string[] args)
         {
-            String pupperMasterURL = "tcp://localhost:1000/W";
-            String entryURL = "";
-            String serviceURL = "tcp://localhost:30001/W";
+            int id = Int32.Parse(args[0]);
+            String pupperMasterURL = args[1];
+            String serviceURL = args[2];
+            String entryURL = args[3];
 
-            Program JT1 = new Program(1, pupperMasterURL, "tcp://localhost:30001/W", entryURL);
+            Program JT1 = new Program(id, pupperMasterURL, serviceURL, entryURL);
            
-            System.Console.ReadLine();
-
-            Program W1 = new Program(2, pupperMasterURL, "tcp://localhost:30002/W", JT1.address);
-          
-            Console.WriteLine("main: W1 as started");
-            Console.WriteLine(W1.assignedJobTracker.address);
-            
-            System.Console.ReadLine();
-
-            Program W2 = new Program(3, pupperMasterURL, "tcp://localhost:30003/W", JT1.address);
-
-            Console.WriteLine("main: W2 as started");
-            Console.WriteLine(W2.assignedJobTracker.address);
-            System.Console.ReadLine();
-
-
-            Program W3 = new Program(4, pupperMasterURL, "tcp://localhost:30004/W", W2.address);
-
-            Console.WriteLine( String.Concat("Workers counter: ", JT1.workers_list.Count) );
-            Console.WriteLine("main: W3 as started");
-            Console.WriteLine(W3.assignedJobTracker.address);
-            System.Console.ReadLine();
-            System.Threading.Thread.Sleep(5000);//espera 5seg
+//            System.Console.ReadLine();
+//
+//            Program W1 = new Program(2, pupperMasterURL, "tcp://localhost:30002/W", JT1.address);
+//          
+//            Console.WriteLine("main: W1 as started");
+//            Console.WriteLine(W1.assignedJobTracker.address);
+//            
+//            System.Console.ReadLine();
+//
+//            Program W2 = new Program(3, pupperMasterURL, "tcp://localhost:30003/W", JT1.address);
+//
+//            Console.WriteLine("main: W2 as started");
+//            Console.WriteLine(W2.assignedJobTracker.address);
+//            System.Console.ReadLine();
+//
+//
+//            Program W3 = new Program(4, pupperMasterURL, "tcp://localhost:30004/W", W2.address);
+//
+//            Console.WriteLine( String.Concat("Workers counter: ", JT1.workers_list.Count) );
+//            Console.WriteLine("main: W3 as started");
+//            Console.WriteLine(W3.assignedJobTracker.address);
+//            System.Console.ReadLine();
+//            System.Threading.Thread.Sleep(5000);//espera 5seg
 
         }
     }
@@ -897,6 +898,9 @@ namespace Worker_JobTracker
         public String registerWorkerService(int id, String workerURL)//tem que responder ao Worker qual o id/ip do Jobtracker que este se deve associar
         {
             String workerFunction;
+
+            System.Console.WriteLine(p.id);
+            System.Console.WriteLine(p.address);
 
             if (p.W == true)
             {//ou é Worker simples ou replica
