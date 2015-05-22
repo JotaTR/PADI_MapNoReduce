@@ -649,6 +649,11 @@ namespace Worker_JobTracker
         ***************************/
         static void Main(string[] args)
         {
+            System.Console.WriteLine(args[0]);
+            System.Console.WriteLine(args[1]);
+            System.Console.WriteLine(args[2]);
+            System.Console.WriteLine(args[3]);
+
             int id = Int32.Parse(args[0]);
             String pupperMasterURL = args[1];
             String serviceURL = args[2];

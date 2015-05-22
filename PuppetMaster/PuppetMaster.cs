@@ -15,6 +15,9 @@ using Worker_JobTracker;
 using PADI_MapNoReduce;
 using Cliente;
 
+using System.Diagnostics;
+
+
 /// PUPPETMASTER: Rui
 
 namespace PuppetMaster
@@ -70,8 +73,8 @@ namespace PuppetMaster
   {
     // int: Worker ID
     // Object: Worker instance
-    private Dictionary<int, Worker_JobTracker.Program> workerList = new Dictionary<int, Worker_JobTracker.Program>();
-    private Dictionary<int, Thread> workerThreadList = new Dictionary<int, Thread>();
+      private Dictionary<int, string> workerList = new Dictionary<int, string>();
+      private Dictionary<int, Thread> workerThreadList = new Dictionary<int, Thread>();
     private int _ID;
     private int _numberPM = 0;
 
@@ -150,9 +153,10 @@ namespace PuppetMaster
 
       if (noWorkerWithID)
       {
-        Thread worker = new Thread(new ParameterizedThreadStart(this.newWorker));
-        worker.Start(new WorkerArguments(id, "tcp://localhost:" + ID + "/PM", workerURL, entryURL));
-        workerThreadList.Add(id, worker);
+          Process.Start("Worker_JobTracker.exe", id + " " + "tcp://localhost:" + ID + "/PM" + " " + workerURL + " " + entryURL);
+          /*Thread worker = new Thread(new ParameterizedThreadStart(this.newWorker));
+          worker.Start(new WorkerArguments(id, "tcp://localhost:" + ID + "/PM", workerURL, entryURL));*/
+          workerList.Add(id, workerURL);
       }
       else
       {
@@ -160,12 +164,12 @@ namespace PuppetMaster
       }
     }
 
-    public void newWorker(object arg)
+   /* public void newWorker(object arg)
     {
       WorkerArguments wa = (WorkerArguments)arg;
       Worker_JobTracker.Program w = new Worker_JobTracker.Program(wa.id, wa.pmURL, wa.workerURL, wa.entryURL);
       workerList.Add(wa.id, w);
-    }
+    }*/
 
     public bool hasWorkerID(int id)
     {
@@ -209,12 +213,13 @@ namespace PuppetMaster
             t.Join();
         }
       string result = "Puppet Master " + ID + " :" + '\n';
-      foreach (KeyValuePair<int, Worker_JobTracker.Program> worker in this.workerList)
+      foreach (KeyValuePair<int, string> worker in this.workerList)
       {
         result += " Worker " + worker.Key + " : ";
-        WorkerInterfaceRef service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), worker.Value._address);
+        WorkerInterfaceRef service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), worker.Value);
         WorkerState state = service.askNodeInfoService();
-        result += "-Ready: " + state.ready.ToString() + " -Frozen: " + state.freeze.ToString() + " -Number of Tasks Remaining: " + state.tasks_remaining + '\n';
+        result += "-Ready: " + state.ready.ToString() + " -Frozen: " + state.freeze.ToString() + " -Number of Tasks Remaining: " + state.tasks_remaining
+          + " -Assigned Job Tracker: " + state.assignedJT + " -Assigned Replica: " + state.assignedReplica + " -Node Type: " + state.nodeType + '\n';
       }
       // Add status requests to worker nodes
       return result;
@@ -224,12 +229,11 @@ namespace PuppetMaster
     // Delays (puts to sleep) a worker process
     public void SlowWorker(int workerID, int ms)
     {
-      Worker_JobTracker.Program w;
+      string wURL;
       Thread wt;
-      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
+      if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
       {
-        Thread temp = new Thread(new ParameterizedThreadStart(this.DelayWorker));
-        temp.Start(new DelayArguments(ms, wt));
+          Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
       }
     }
 
@@ -245,80 +249,84 @@ namespace PuppetMaster
     // Disables a given worker process's Worker Functions
     public bool FreezeWorker(int workerID)
     {
-      Worker_JobTracker.Program w;
-      Thread wt;
-      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
-      {
-        if (w._W)
+        string wURL;
+        Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
         {
-          w._freeze = true;
-          wt.Suspend();
+            Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
+            if (w._W)
+            {
+                w._freeze = true;
+                wt.Suspend();
+            }
+            return true;
         }
-        return true;
-      }
-      return false;
+        return false;
     }
 
     // UnfreezeWorker:
     // Re-enables a given worker process's Worker Functions
     public bool UnfreezeWorker(int workerID)
     {
-      Worker_JobTracker.Program w;
-      Thread wt;
-      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
-      {
-        wt.Resume();
-        if (w._W && w._freeze)
+        string wURL;
+        Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
         {
-          w._freeze = false;
+            Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
+            wt.Resume();
+            if (w._W && w._freeze)
+            {
+                w._freeze = false;
+            }
+            else
+            {
+                wt.Suspend();
+            }
+            return true;
         }
-        else
-        {
-          wt.Suspend();
-        }
-        return true;
-      }
-      return false;
+        return false;
     }
 
     // FreezeJobTracker:
     // Disables a given worker process's JobTracker Functions
     public bool FreezeJobTracker(int workerID)
     {
-      Worker_JobTracker.Program w;
-      Thread wt;
-      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
-      {
-        if (w._JT)
+        string wURL;
+        Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
         {
-          w._freeze = true;
-          wt.Suspend();
+            Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
+            if (w._JT)
+            {
+                w._freeze = true;
+                wt.Suspend();
+            }
+            return true;
         }
-        return true;
-      }
-      return false;
+        return false;
     }
 
     // UnfreezeJobTracker:
     // Re-enables a given worker process's JobTracker Functions
     public bool UnfreezeJobTracker(int workerID)
     {
-      Worker_JobTracker.Program w;
-      Thread wt;
-      if (workerList.TryGetValue(workerID, out w) && workerThreadList.TryGetValue(workerID, out wt))
-      {
-        wt.Resume();
-        if (w._JT && w._freeze)
+        string wURL;
+        Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
         {
-          w._freeze = false;
+            Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
+            wt.Resume();
+            if (w._JT && w._freeze)
+            {
+                w._freeze = false;
+            }
+            else
+            {
+                wt.Suspend();
+            }
+            return true;
         }
-        else
-        {
-          wt.Suspend();
-        }
-        return true;
-      }
-      return false;
+        return false;
     }
 
     public void CallFreeze(int workerID, FreezeType fType)
