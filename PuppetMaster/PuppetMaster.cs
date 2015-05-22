@@ -45,6 +45,25 @@ namespace PuppetMaster
       wt = worker;
     }
   }
+  public class submitArguments
+  {
+      public Cliente.Cliente client;
+      public string input;
+      public int nSplits;
+      public string output;
+      public byte[] _code;
+      public string className;
+
+      public submitArguments(Cliente.Cliente c, string inputPath, int splits, string outputPath, byte[] code, string mapClassName)
+      {
+          client = c;
+          input = inputPath;
+          nSplits = splits;
+          output = outputPath;
+          _code = code;
+          className = mapClassName;
+      }
+  }
 
   public enum FreezeType {FREEZEW, UNFREEZEW, FREEZEC, UNFREEZEC};
   class PuppetMaster : MarshalByRefObject
@@ -86,25 +105,26 @@ namespace PuppetMaster
                           string mapClassName, string mapClassPath
       ) 
     {
-      client = userApp.Init(this.ID - 30000, entryURL);
+        if (client == null)
+        {
+            client = userApp.Init(this.ID - 30000, entryURL);
+        }
+        else
+        {
+            client.entryURL = entryURL;
+        }
       
       byte[] code = System.IO.File.ReadAllBytes(mapClassPath);
 
-      /*object ClassObj = null;
-      Assembly assembly = Assembly.Load(code);
-      // Walk through each type in the assembly looking for our class
-      foreach (Type type in assembly.GetTypes()) {
-        if (type.IsClass == true) {
-          if (type.FullName.EndsWith("." + mapClassName)) {
-            // create an instance of the object
-            ClassObj = Activator.CreateInstance(type);
-          }
-        }
-      }
+      Thread t = new Thread(new ParameterizedThreadStart(this.sendJob));
+      t.Start(new submitArguments(client, inputPath, nSplits, outputPath, code, mapClassName));
 
-      IMapper mapper = (IMapper) ClassObj;*/
+    }
 
-      client.submit(inputPath, nSplits, outputPath, code, mapClassName);
+    public void sendJob(object obj)
+    {
+        submitArguments args = (submitArguments)obj;
+        args.client.submit(args.input, args.nSplits, args.output, args._code, args.className);
     }
 
     // CreateWorker: 
@@ -132,7 +152,6 @@ namespace PuppetMaster
       {
         Thread worker = new Thread(new ParameterizedThreadStart(this.newWorker));
         worker.Start(new WorkerArguments(id, "tcp://localhost:" + ID + "/PM", workerURL, entryURL));
-        Thread.Sleep(10);
         workerThreadList.Add(id, worker);
       }
       else
@@ -165,6 +184,7 @@ namespace PuppetMaster
     // Requests all workers/job trackers submit/print their current status
     public void StatusReport()
     {
+     
       string result = "";
       for (int i = 1; i <= numberPM; i++)
       {
@@ -184,6 +204,10 @@ namespace PuppetMaster
 
     public string Report()
     {
+        foreach (Thread t in workerThreadList.Values)
+        {
+            t.Join();
+        }
       string result = "Puppet Master " + ID + " :" + '\n';
       foreach (KeyValuePair<int, Worker_JobTracker.Program> worker in this.workerList)
       {
