@@ -130,12 +130,18 @@ namespace PADI_MapNoReduce
         public bool ready;//verifica se o nó nestá livre ou está a trabalhar
         public bool freeze;//permite para a execução do node
         public int tasks_remaining;
+        public String assignedJT;
+        public String assignedReplica;
+        public String nodeType;
 
-        public WorkerState(bool ready, bool freeze, int tasks_remaining)
+        public WorkerState(bool ready, bool freeze, int tasks_remaining, String assignedJT, String assignedReplica, String nodeType)
         {
             this.ready = ready;
             this.freeze = freeze;
             this.tasks_remaining = tasks_remaining;
+            this.assignedJT = assignedJT;
+            this.assignedReplica = assignedReplica;
+            this.nodeType = nodeType;
         }
     }
 
@@ -298,7 +304,7 @@ namespace PADI_MapNoReduce
          * Metodos COMUNS
         ********************/    
         //Interface para um novo worker se poder registar num determinado JobTracker
-        String registerWorkerService(int id);//tem que responder ao Worker qual o id/ip do Jobtracker que este se deve associar
+        String registerWorkerService(int id, String url);//tem que responder ao Worker qual o id/ip do Jobtracker que este se deve associar
         
         //permite conhecer o seu id
         int getId();
