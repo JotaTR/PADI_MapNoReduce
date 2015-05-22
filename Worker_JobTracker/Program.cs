@@ -147,7 +147,10 @@ namespace Worker_JobTracker
                 //caso a resposta do nó não seja "JT", "W" ou "WR" o entryNode enviou um URL de outro JT
                 while (nodeFunction != "JT" && nodeFunction != "W" && nodeFunction != "WR")
                 {
-                    jobTrackerServic = null;
+                    System.Console.WriteLine("Enter the while");
+                    System.Console.WriteLine(nodeFunction);
+                    System.Console.WriteLine(this.id);
+                    System.Console.WriteLine(this.address);
                     jobTrackerAddress = nodeFunction;//Visto que foi returnado um URL guardamos este URL na esperança de ser o JT
                     jobTrackerServic = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), nodeFunction);
                     nodeFunction = jobTrackerServic.registerWorkerService(this.id, this.address);                               
@@ -652,12 +655,19 @@ namespace Worker_JobTracker
             System.Console.WriteLine(args[0]);
             System.Console.WriteLine(args[1]);
             System.Console.WriteLine(args[2]);
-            System.Console.WriteLine(args[3]);
+            if (args.Length > 3)
+            {
+                System.Console.WriteLine(args[3]);
+            }
 
             int id = Int32.Parse(args[0]);
             String pupperMasterURL = args[1];
             String serviceURL = args[2];
-            String entryURL = args[3];
+            String entryURL = "";
+            if (args.Length > 3)
+            {
+                entryURL = args[3];
+            }
 
             Program JT1 = new Program(id, pupperMasterURL, serviceURL, entryURL);
            
@@ -838,7 +848,7 @@ namespace Worker_JobTracker
 
             System.Console.WriteLine(p.id);
             System.Console.WriteLine(p.address);
-
+            WorkerInterfaceRef workerReplicaService;
             if (p.W == true)
             {//ou é Worker simples ou replica
                 workerFunction = p.assignedJobTracker.address;
@@ -879,7 +889,7 @@ namespace Worker_JobTracker
                         Console.WriteLine("Worker id and address", workerInList.id, workerInList.address);
                         if (workerInList.replica == true)
                         {
-                            WorkerInterfaceRef workerReplicaService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), p.assignedJobTracker.address);
+                            workerReplicaService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), workerInList.address);
                             workerReplicaService.addWorkerService(workerInList);
                         }
                     }

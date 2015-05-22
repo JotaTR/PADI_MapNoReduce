@@ -212,17 +212,26 @@ namespace PuppetMaster
         {
             t.Join();
         }
-      string result = "Puppet Master " + ID + " :" + '\n';
-      foreach (KeyValuePair<int, string> worker in this.workerList)
-      {
-        result += " Worker " + worker.Key + " : ";
-        WorkerInterfaceRef service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), worker.Value);
-        WorkerState state = service.askNodeInfoService();
-        result += "-Ready: " + state.ready.ToString() + " -Frozen: " + state.freeze.ToString() + " -Number of Tasks Remaining: " + state.tasks_remaining
-          + " -Assigned Job Tracker: " + state.assignedJT + " -Assigned Replica: " + state.assignedReplica + " -Node Type: " + state.nodeType + '\n';
-      }
-      // Add status requests to worker nodes
-      return result;
+        string result = "Puppet Master " + ID + " :" + '\n';
+        foreach (KeyValuePair<int, string> worker in this.workerList)
+        {
+            WorkerInterfaceRef service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), worker.Value);
+            try
+            {
+                WorkerState state = service.askNodeInfoService();
+                result += " Worker " + worker.Key + " : ";
+                result += "-Ready: " + state.ready.ToString() + " -Frozen: " + state.freeze.ToString() + " -Number of Tasks Remaining: " + state.tasks_remaining
+                    + " -Assigned Job Tracker: " + state.assignedJT + " -Assigned Replica: " + state.assignedReplica + " -Node Type: " + state.nodeType + '\n';
+
+            }
+            catch (Exception e)
+            {
+                System.Windows.Forms.MessageBox.Show("Service from worker " + worker.Key + " is unreachable");
+            }
+
+        }
+        // Add status requests to worker nodes
+        return result;
     }
 
     // SlowWorker:
@@ -239,10 +248,10 @@ namespace PuppetMaster
 
     public void DelayWorker(object t)
     {
-      DelayArguments args = (DelayArguments)t;
-      args.wt.Suspend();
-      Thread.Sleep(args.time);
-      args.wt.Resume();
+          DelayArguments args = (DelayArguments)t;
+          args.wt.Suspend();
+          Thread.Sleep(args.time);
+          args.wt.Resume();
     }
 
     // FreezeWorker:
@@ -257,7 +266,6 @@ namespace PuppetMaster
             if (w._W)
             {
                 w._freeze = true;
-                wt.Suspend();
             }
             return true;
         }
