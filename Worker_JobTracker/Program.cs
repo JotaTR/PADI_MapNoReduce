@@ -116,7 +116,9 @@ namespace Worker_JobTracker
             this.jobtracker_list = new List<JobTracker>();
             this.subJobW_list = new List<SubJobW>();
             this.port = 30000 + this.id;
-            this.address = createNodeURL(this.port, this.serviceURL);
+            this.address = serviceURL;
+            this.freeze = false;
+            this.ready = true;
             this.init();
         }
 
@@ -128,7 +130,7 @@ namespace Worker_JobTracker
             String jobTrackerAddress = entryURL;//para já assumimos que o entryPoint é um JT. Se não for a resposta não serentra no while() 
 
             //Forma de o nó descobrir a sua função na rede. 
-            if (entryURL == null)//Verifica se é o unico na rede
+            if (entryURL == "")//Verifica se é o unico na rede
             {
                 this.JT = true;
                 this.W = false;
@@ -140,14 +142,15 @@ namespace Worker_JobTracker
                                
                 //contactamos a primeira vez o serviço de registo no entryNode
                 WorkerInterfaceRef jobTrackerServic = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), entryURL);
-                String nodeFunction = jobTrackerServic.registerWorkerService(id);
+                String nodeFunction = jobTrackerServic.registerWorkerService(this.id, this.address);
                 
                 //caso a resposta do nó não seja "JT", "W" ou "WR" o entryNode enviou um URL de outro JT
                 while (nodeFunction != "JT" && nodeFunction != "W" && nodeFunction != "WR")
                 {
+                    jobTrackerServic = null;
                     jobTrackerAddress = nodeFunction;//Visto que foi returnado um URL guardamos este URL na esperança de ser o JT
                     jobTrackerServic = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), nodeFunction);
-                    nodeFunction = jobTrackerServic.registerWorkerService(id);                               
+                    nodeFunction = jobTrackerServic.registerWorkerService(this.id, this.address);                               
                 }
 
                 //contacta o jobTracker para saber o seu id e cria o objecto JobTracker
@@ -195,7 +198,7 @@ namespace Worker_JobTracker
             bool isSecure = false;
             propBagRef["port"] = this.port;
             propBagRef["typeFilterLevel"] = TypeFilterLevel.Full;
-            propBagRef["name"] = String.Concat("UniqueChannelName", this.id); // here enter unique channel name
+            propBagRef["name"] = String.Concat("UniqueChannelName3000", this.id); // here enter unique channel name
             if (isSecure) // if you want remoting comm to be secure and encrypted
             {
                 propBagRef["secure"] = isSecure;
@@ -228,7 +231,7 @@ namespace Worker_JobTracker
                 //Pede ao JT que lhe atribuiu a função a lista de JT
                 if (!jobTrackerAddress.Equals(""))//Verifica se não é o unico na rede
                 {
-                    WorkerServicesRef getJTlistService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), assignedJobTracker.address);
+                    WorkerInterfaceRef getJTlistService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), assignedJobTracker.address);
                     jobtracker_list = getJTlistService.getJTlistService();
 
                 }
@@ -237,7 +240,7 @@ namespace Worker_JobTracker
                 JobTracker jt = new JobTracker(address, id);  
                 foreach (JobTracker existingJT in this.jobtracker_list)
                 {
-                    WorkerServicesRef JTService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingJT.address);
+                    WorkerInterfaceRef JTService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), existingJT.address);
                     JTService.addJTService(jt);
                 }
 
@@ -258,7 +261,7 @@ namespace Worker_JobTracker
                 System.Console.WriteLine("Sou um Worker com funcoes de replica.");
                 
                 //Pede lista de JobTrackers e de Workers
-                WorkerServicesRef JTServiceReplica = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), assignedJobTracker.address);
+                WorkerInterfaceRef JTServiceReplica = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), assignedJobTracker.address);
                 this.jobtracker_list = JTServiceReplica.getJTlistService();//recebe lista de JT
                 this.workers_list = JTServiceReplica.getWlistService();//recebe lista de W do HT
 
@@ -287,7 +290,7 @@ namespace Worker_JobTracker
         *************************/
         public void submitSubJob(int split_number, String client_address, string text_file, int startingSplit_nbr)
         {
-            WorkerServicesRef service;
+            WorkerInterfaceRef service;
 
             //Retorna um array que
             List<int> nbrTaskWorkerList = this.splitJobs(this.workers_list.Count(), split_number);//contem o numero de Task que cada Worker vai executar (posição = worker)
@@ -319,7 +322,7 @@ namespace Worker_JobTracker
             {
                 if (w.replica == true)//procura pela replica
                 {
-                    service = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), w.address);
+                    service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), w.address);
                     service.addSubJobList(subJobW_list);
                 }                
             }
@@ -381,7 +384,7 @@ namespace Worker_JobTracker
         {
             this.JT = true;
             //pede lista de workers da rede ao novo JobTracker (ja esta actalizado)
-            WorkerServicesRef JTService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), this.jobtracker_list[0].address);
+            WorkerInterfaceRef JTService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), this.jobtracker_list[0].address);
             this.jobtracker_list = JTService.getJTlistService();
             this.workers_list = JTService.getWlistService();
         }
@@ -391,14 +394,14 @@ namespace Worker_JobTracker
             this.W = false;//altera o estado do node
 
             //pede uma nova lista de JobTrackers a um JT arbitrario da sua lista
-            WorkerServicesRef JTService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), this.jobtracker_list[0].address);
+            WorkerInterfaceRef JTService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), this.jobtracker_list[0].address);
             this.jobtracker_list = JTService.getJTlistService();
 
             //Adiciona-se a lista de JT dos outros JT e remove o anterior
             JobTracker jtPromoted = new JobTracker(this.address, this.id);
             foreach (JobTracker existingJT in this.jobtracker_list)
             {
-                WorkerServicesRef JTService2 = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingJT.address);
+                WorkerInterfaceRef JTService2 = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), existingJT.address);
                 JTService2.addJTService(jtPromoted);
                 JTService2.removeJTService(this.assignedJobTracker.id);
             }
@@ -410,12 +413,12 @@ namespace Worker_JobTracker
             //Avisa todos os Workers que o novo JobTracker é ele
             foreach (Worker existingW in this.workers_list)
             {
-                WorkerServicesRef JTService3 = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingW.address);
+                WorkerInterfaceRef JTService3 = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), existingW.address);
                 JTService3.updateJobTracker(jtPromoted);
             }
 
             //Promove o primeiro Worker da lista a Replica
-            WorkerServicesRef JTServiceReplica = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), this.workers_list[0].address);
+            WorkerInterfaceRef JTServiceReplica = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), this.workers_list[0].address);
             JTServiceReplica.promoteToReplicaService();
 
             //coloca a variavel que guarda o jobTracker a null 
@@ -494,11 +497,12 @@ namespace Worker_JobTracker
         public void checkLifeThread(object arg)
         {
             Console.WriteLine("checkLifeThread starting...");
+            Console.WriteLine(this.id);
             WorkerInterfaceRef service;
             WorkerState jobTrackerState;
             WorkerState stateWorker;
             WorkerInterfaceRef promotionService;
-            WorkerServicesRef WorkerService;
+            WorkerInterfaceRef WorkerService;
             while (true)
             {
                 if (this.freeze == false && this.W == true && this.JT == true)//JT replica node (is also worker)
@@ -559,7 +563,7 @@ namespace Worker_JobTracker
                                     {
                                         if (existingW.replica == true)
                                         {
-                                            WorkerService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), existingW.address);
+                                            WorkerService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), existingW.address);
                                             WorkerService.removeWorkerService(existingW.id);
                                         }
                                     }
@@ -622,7 +626,7 @@ namespace Worker_JobTracker
         public void submitJobThread(Object arg)
         {
             JobArguments job = (JobArguments)arg;
-            WorkerServicesRef service = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), job.address);
+            WorkerInterfaceRef service = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), job.address);
             service.submitSubJobService(job.nbr_splits, job.clientAddress, job.text_file, job.startingSplit_nbr);
 
         }
@@ -657,27 +661,33 @@ namespace Worker_JobTracker
         static void Main(string[] args)
         {
             String pupperMasterURL = "tcp://localhost:1000/W";
-            String entryURL = null;
-            String serviceURL = "W";
-            
-            Program JT1 = new Program(1, pupperMasterURL, serviceURL, entryURL);
-            JT1.init();
-            
+            String entryURL = "";
+            String serviceURL = "tcp://localhost:30001/W";
+
+            Program JT1 = new Program(1, pupperMasterURL, "tcp://localhost:30001/W", entryURL);
+           
             System.Console.ReadLine();
-            
-            Program W1 = new Program(2, pupperMasterURL, serviceURL, JT1.address);
-            W1.init();
+
+            Program W1 = new Program(2, pupperMasterURL, "tcp://localhost:30002/W", JT1.address);
+          
             Console.WriteLine("main: W1 as started");
             Console.WriteLine(W1.assignedJobTracker.address);
             
             System.Console.ReadLine();
 
-            Program W2 = new Program(3, pupperMasterURL, serviceURL, JT1.address);
-            W1.init();
+            Program W2 = new Program(3, pupperMasterURL, "tcp://localhost:30003/W", JT1.address);
+
             Console.WriteLine("main: W2 as started");
             Console.WriteLine(W2.assignedJobTracker.address);
             System.Console.ReadLine();
 
+
+            Program W3 = new Program(4, pupperMasterURL, "tcp://localhost:30004/W", W2.address);
+
+            Console.WriteLine( String.Concat("Workers counter: ", JT1.workers_list.Count) );
+            Console.WriteLine("main: W3 as started");
+            Console.WriteLine(W3.assignedJobTracker.address);
+            System.Console.ReadLine();
             System.Threading.Thread.Sleep(5000);//espera 5seg
 
         }
@@ -820,15 +830,41 @@ namespace Worker_JobTracker
         public WorkerState askNodeInfoService() 
         {
             WorkerState ws;
-            if (p.JT == true && p.W == false && p.subJobW != null)//JobTracker
+            int taskNumber;
+            String assignedJTaddress = "none";
+            String assignedReplicaAddress = "none";
+            String nodeType = "";
+            taskNumber = 0;
+            if (p.JT == true && p.W == false )//JobTracker
             {
-                ws = new WorkerState(p.ready, p.freeze, p.subJobW.taskList.Count);
-                return ws;
+                nodeType = "JT";
+                if (p.replica != null)
+                {
+                    assignedReplicaAddress = p.replica.address;
+                }
+                
+                
             }
-            else
+            else if(p.JT == true && p.W == true )//Worker Replica
             {
-                ws = new WorkerState(p.ready, p.freeze,0);
+                if(p.subJobW != null)
+                {
+                    taskNumber = p.subJobW.taskList.Count;
+                }
+                assignedJTaddress = p.assignedJobTracker.address;
+                nodeType = "WR";
             }
+            else if (p.JT == false && p.W == true)//Worker
+            {
+                if(p.subJobW != null)
+                {
+                    taskNumber = p.subJobW.taskList.Count;
+                }
+                assignedJTaddress = p.assignedJobTracker.address;
+                nodeType = "W";
+            }
+
+            ws = new WorkerState(p.ready, p.freeze, taskNumber, assignedJTaddress, assignedReplicaAddress, nodeType);
             return ws;
         }
 
@@ -858,7 +894,7 @@ namespace Worker_JobTracker
         * Metodos COMUNS
         * ************************/
         //Interface para um novo worker se poder registar num determinado JobTracker
-        public String registerWorkerService(int id)//tem que responder ao Worker qual o id/ip do Jobtracker que este se deve associar
+        public String registerWorkerService(int id, String workerURL)//tem que responder ao Worker qual o id/ip do Jobtracker que este se deve associar
         {
             String workerFunction;
 
@@ -886,8 +922,8 @@ namespace Worker_JobTracker
                 else if (p.workers_list.Count == 0)//JT sem nenhum Worker.
                 {
                     workerFunction = "WR";
-                    Worker w = new Worker(p.createNodeURL(id, p.serviceURL), id, true);
-                    p.workers_list.Add(w);
+                    p.workers_list.Add(new Worker(workerURL, id, true));
+
                 }
                 else
                 {
@@ -902,7 +938,7 @@ namespace Worker_JobTracker
                         Console.WriteLine("Worker id and address", workerInList.id, workerInList.address);
                         if (workerInList.replica == true)
                         {
-                            WorkerServicesRef workerReplicaService = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), p.assignedJobTracker.address);
+                            WorkerInterfaceRef workerReplicaService = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), p.assignedJobTracker.address);
                             workerReplicaService.addWorkerService(workerInList);
                         }
                     }
@@ -927,6 +963,8 @@ namespace Worker_JobTracker
         //permite obter a lista de W
         public List<Worker> getWlistService()
         {
+            System.Console.WriteLine(String.Concat("my id: " + p.id));
+            System.Console.WriteLine(String.Concat("my address: " + p.address));
             return p.workers_list;
         }
 
