@@ -80,6 +80,11 @@ namespace Cliente
             byte[] code;
             String className;
 
+            public String entryURL
+            {
+                get { return workerURL; }
+                set { workerURL = value; }
+            }
 
             public static Program p;
             public Cliente(int id, string entryURL)
@@ -118,7 +123,7 @@ namespace Cliente
                 for (int i = 0; i < splits; i++)
                  
                 {
-                    splitslist[i] = 0;
+                    splitslist.Add(0);
                 }
 
                 int j = 0;
