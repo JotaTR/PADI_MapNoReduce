@@ -145,12 +145,14 @@ namespace Worker_JobTracker
                 String nodeFunction = jobTrackerServic.registerWorkerService(this.id, this.address);
                 
                 //caso a resposta do nó não seja "JT", "W" ou "WR" o entryNode enviou um URL de outro JT
-                while (nodeFunction != "JT" && nodeFunction != "W" && nodeFunction != "WR")
+                while (true)
                 {
+                    if (nodeFunction == "JT" || nodeFunction == "W" || nodeFunction == "WR")
+                    {
+                        break;
+                    }         
                     System.Console.WriteLine("Enter the while");
                     System.Console.WriteLine(nodeFunction);
-                    System.Console.WriteLine(this.id);
-                    System.Console.WriteLine(this.address);
                     jobTrackerAddress = nodeFunction;//Visto que foi returnado um URL guardamos este URL na esperança de ser o JT
                     jobTrackerServic = (WorkerInterfaceRef)Activator.GetObject(typeof(WorkerInterfaceRef), nodeFunction);
                     nodeFunction = jobTrackerServic.registerWorkerService(this.id, this.address);                               
@@ -616,7 +618,6 @@ namespace Worker_JobTracker
                 }
                 else
                 {
-                    Console.WriteLine("Thread checkWorkerLife running");
                     Console.WriteLine("Empty Thread running");
                 }
                 //if end
@@ -778,11 +779,12 @@ namespace Worker_JobTracker
         public WorkerState askNodeInfoService() 
         {
             WorkerState ws;
-            int taskNumber;
+            int taskNumber = 0;
             String assignedJTaddress = "none";
             String assignedReplicaAddress = "none";
             String nodeType = "";
-            taskNumber = 0;
+            int workersNbr = 0;
+            int jobtrackerNbr = 0;
             if (p.JT == true && p.W == false )//JobTracker
             {
                 nodeType = "JT";
@@ -790,8 +792,8 @@ namespace Worker_JobTracker
                 {
                     assignedReplicaAddress = p.replica.address;
                 }
-                
-                
+                jobtrackerNbr = p.jobtracker_list.Count;
+                workersNbr = p.workers_list.Count;                
             }
             else if(p.JT == true && p.W == true )//Worker Replica
             {
@@ -801,6 +803,8 @@ namespace Worker_JobTracker
                 }
                 assignedJTaddress = p.assignedJobTracker.address;
                 nodeType = "WR";
+                jobtrackerNbr = p.jobtracker_list.Count;
+                workersNbr = p.workers_list.Count;
             }
             else if (p.JT == false && p.W == true)//Worker
             {
@@ -812,7 +816,7 @@ namespace Worker_JobTracker
                 nodeType = "W";
             }
 
-            ws = new WorkerState(p.ready, p.freeze, taskNumber, assignedJTaddress, assignedReplicaAddress, nodeType);
+            ws = new WorkerState(p.ready, p.freeze, taskNumber, assignedJTaddress, assignedReplicaAddress, nodeType, workersNbr, jobtrackerNbr);
             return ws;
         }
 

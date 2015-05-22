@@ -133,8 +133,10 @@ namespace PADI_MapNoReduce
         public String assignedJT;
         public String assignedReplica;
         public String nodeType;
+        public int jobtrackerNbr;
+        public int workersNbr;
 
-        public WorkerState(bool ready, bool freeze, int tasks_remaining, String assignedJT, String assignedReplica, String nodeType)
+        public WorkerState(bool ready, bool freeze, int tasks_remaining, String assignedJT, String assignedReplica, String nodeType, int workersNbr, int jobtrackerNbr)
         {
             this.ready = ready;
             this.freeze = freeze;
@@ -142,6 +144,8 @@ namespace PADI_MapNoReduce
             this.assignedJT = assignedJT;
             this.assignedReplica = assignedReplica;
             this.nodeType = nodeType;
+            this.jobtrackerNbr = jobtrackerNbr;
+            this.workersNbr = workersNbr;
         }
     }
 

@@ -221,7 +221,8 @@ namespace PuppetMaster
                 WorkerState state = service.askNodeInfoService();
                 result += " Worker " + worker.Key + " : ";
                 result += "-Ready: " + state.ready.ToString() + " -Frozen: " + state.freeze.ToString() + " -Number of Tasks Remaining: " + state.tasks_remaining
-                    + " -Assigned Job Tracker: " + state.assignedJT + " -Assigned Replica: " + state.assignedReplica + " -Node Type: " + state.nodeType + '\n';
+                    + " -Assigned Job Tracker: " + state.assignedJT + " -Assigned Replica: " + state.assignedReplica + " -Node Type: " + state.nodeType + 
+                    " -WorkersNbr: " + state.workersNbr + " -JT number: " + state.jobtrackerNbr + '\n';
 
             }
             catch (Exception e)
