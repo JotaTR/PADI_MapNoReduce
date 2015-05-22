@@ -110,7 +110,7 @@ namespace PuppetMaster
     {
         if (client == null)
         {
-            client = userApp.Init(this.ID - 30000, entryURL);
+            client = userApp.Init(this.ID - 20000, entryURL);
         }
         else
         {
@@ -228,6 +228,7 @@ namespace PuppetMaster
             catch (Exception e)
             {
                 System.Windows.Forms.MessageBox.Show("Service from worker " + worker.Key + " is unreachable");
+                result += " Worker " + worker.Key + " : " + "Service from worker " + worker.Key + " is unreachable" + '\n';
             }
 
         }
@@ -240,8 +241,8 @@ namespace PuppetMaster
     public void SlowWorker(int workerID, int ms)
     {
       string wURL;
-      Thread wt;
-      if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
+      //Thread wt;
+      if (workerList.TryGetValue(workerID, out wURL) /*&& workerThreadList.TryGetValue(workerID, out wt)*/)
       {
           Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
       }
@@ -260,8 +261,8 @@ namespace PuppetMaster
     public bool FreezeWorker(int workerID)
     {
         string wURL;
-        Thread wt;
-        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
+        //Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) /*&& workerThreadList.TryGetValue(workerID, out wt)*/)
         {
             Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
             if (w._W)
@@ -278,19 +279,19 @@ namespace PuppetMaster
     public bool UnfreezeWorker(int workerID)
     {
         string wURL;
-        Thread wt;
-        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
+        //Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) /*&& workerThreadList.TryGetValue(workerID, out wt)*/)
         {
             Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
-            wt.Resume();
+            //wt.Resume();
             if (w._W && w._freeze)
             {
                 w._freeze = false;
             }
-            else
+            /*else
             {
                 wt.Suspend();
-            }
+            }*/
             return true;
         }
         return false;
@@ -301,14 +302,14 @@ namespace PuppetMaster
     public bool FreezeJobTracker(int workerID)
     {
         string wURL;
-        Thread wt;
-        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
+        //Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) /*&& workerThreadList.TryGetValue(workerID, out wt)*/)
         {
             Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
             if (w._JT)
             {
                 w._freeze = true;
-                wt.Suspend();
+                //wt.Suspend();
             }
             return true;
         }
@@ -320,19 +321,19 @@ namespace PuppetMaster
     public bool UnfreezeJobTracker(int workerID)
     {
         string wURL;
-        Thread wt;
-        if (workerList.TryGetValue(workerID, out wURL) && workerThreadList.TryGetValue(workerID, out wt))
+        //Thread wt;
+        if (workerList.TryGetValue(workerID, out wURL) /*&& workerThreadList.TryGetValue(workerID, out wt)*/)
         {
             Worker_JobTracker.Program w = (Worker_JobTracker.Program)Activator.GetObject(typeof(Worker_JobTracker.Program), wURL);
-            wt.Resume();
+            //wt.Resume();
             if (w._JT && w._freeze)
             {
                 w._freeze = false;
             }
-            else
+            /*else
             {
                 wt.Suspend();
-            }
+            }*/
             return true;
         }
         return false;
