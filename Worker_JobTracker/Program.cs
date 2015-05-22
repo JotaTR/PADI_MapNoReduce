@@ -631,17 +631,6 @@ namespace Worker_JobTracker
 
         }
 
-//        //SubmitJob Threads
-//        public void submitSubJobThread(Object arg)
-//        {
-//            SubJobArguments subjob = (SubJobArguments)arg;
-//
-//            //atribui a task ao worker
-//            WorkerServicesRef service = (WorkerServicesRef)Activator.GetObject(typeof(WorkerServicesRef), subjob.address);
-//            service.attributeTaskService(new SubJobW(subjob.workerId, subjob.jobTrackerId, subjob.clientAddress, subjob.text_file, subjob.task_list));
-//
-//        }
-//
         //Executa um conunto de tasks
         public void executeSubJobThread(object arg)
         {
@@ -667,7 +656,7 @@ namespace Worker_JobTracker
 
             Program JT1 = new Program(id, pupperMasterURL, serviceURL, entryURL);
            
-//            System.Console.ReadLine();
+            System.Console.ReadLine();
 //
 //            Program W1 = new Program(2, pupperMasterURL, "tcp://localhost:30002/W", JT1.address);
 //          
@@ -700,63 +689,6 @@ namespace Worker_JobTracker
     /********************************
         * Services
     *********************************/
-//     //Serviços disponibilizadios Pelo no
-//    [Serializable]
-//    internal class WorkerServicesRef : ISerializable, WorkerInterfaceVal
-//    {
-//
-//        public static Program p;
-//
-//        //permite que um JT obtenha a lista de JT existentes
-//        public List<JobTracker> getJTlistService()
-//        {
-//            return p.jobtracker_list;
-//        }
-//
-//        //permite obter a lista de W
-//        public List<Worker> getWlistService()
-//        {
-//            return p.workers_list;
-//        }
-//
-//        //permite que seja adicionao um novo JT á lista
-//        public void addJTService(JobTracker jt)
-//        {
-//            p.jobtracker_list.Add(jt);
-//        }
-//
-//        //Remove JobTracker à sua lista
-//        public void removeJTService(int id)
-//        {
-//            p.jobtracker_list.RemoveAll(x => x.id == id);
-//        }
-//
-//
-//        //Remove worker da sua lista
-//        public void removeWorkerService(int id)
-//        {
-//            p.workers_list.RemoveAll(x => x.id == id);
-//        }
-//
-//        //Adiciona worker à sua lista
-//        public void addWorkerService(Worker w)
-//        {
-//            p.workers_list.Add(w);
-//        }
-//
-//        //permite conhecer o informação sobre o Worker e permite saber se este está vivo
-//        public void addSubJobList(List<SubJobW> subjobList)
-//        {
-//            p.subJobW_list = subjobList;
-//        }
-//
-//        //actualiza o jobTracker
-//        public void updateJobTracker(JobTracker jt)
-//        {
-//            p.assignedJobTracker = jt;
-//        }
-//
-//    }
     //Serviços disponibilizadios Pelo no
     internal class WorkerServicesRef: MarshalByRefObject, WorkerInterfaceRef
     {
@@ -1008,99 +940,5 @@ namespace Worker_JobTracker
         {
             p.assignedJobTracker = jt;
         }
-
-
-
-//              //permite que um JT obtenha a lista de JT existentes
-//        public String getJTlistService()
-//        {
-//            String jt_list_string = "";
-//            int counter = 1;
-//            foreach (JobTracker jt in p.jobtracker_list)
-//            {
-//
-//                if (counter == p.jobtracker_list.Count)
-//                {
-//                    jt_list_string = "" + jt_list_string + jt.toString();
-//                }
-//                else
-//                {
-//                    jt_list_string = "" + jt_list_string + jt.toString() + "|";
-//                }
-//                counter++;
-//            }
-//            return jt_list_string;
-//        }
-// 
-//
- //       public String getWlistService()
- //       {
- //           String w_list_string = "";
- //           int counter = 1;
- //           foreach (Worker w in p.workers_list)
- //           {
- //               if (counter == p.jobtracker_list.Count)
- //               {
- //                   w_list_string = "" + w_list_string + w.toString();
- //               }
- //               else
- //               {
- //                   w_list_string = "" + w_list_string + w.toString() + "|";
- //               }
- //               counter++;
- //           }
- //           return w_list_string;
- //       }
- //
- //       //permite que seja adicionao um novo JT á lista
- //       public void addJTService(String jt)
- //       {
- //
- //           p.jobtracker_list.Add(new JobTracker(jt));
- //       }
- //
- //       //Remove JobTracker à sua lista
- //       public void removeJTService(int id)
- //       {
- //           p.jobtracker_list.RemoveAll(x => x.id == id);
- //       }
- //
- //
- //       //Remove worker da sua lista
- //       public void removeWorkerService(int id)
- //       {
- //           p.workers_list.RemoveAll(x => x.id == id);
- //       }
- //
- //       //Adiciona worker à sua lista
- //       public void addWorkerService(String wString)
- //       {
- //           p.workers_list.Add(new Worker(wString));
- //       }
- //
- //       //permite conhecer o informação sobre o Worker e permite saber se este está vivo
- //       public void addSubJobList(String subjobListString)
- //       {
- //
- //           string[] subJobStringList = subjobListString.Split(new string[] { "|" }, StringSplitOptions.None);
- //           foreach (String subJobString in subJobStringList)
- //           {
- //               if (subJobString != "")
- //               {
- //                   p.subJobW_list.Add(new SubJobW(subJobString));
- //               }
- //               
- //           }
- //           
- //       }
- //
- //       //actualiza o jobTracker
- //       public void updateJobTracker(String jtString)
- //       {
- //           p.assignedJobTracker = new JobTracker(jtString);
- //       }
-
-
-
     }
 }
